@@ -14,32 +14,6 @@ import type {
   TheoryOverlayContextTarget
 } from '../../music/types';
 
-export interface TopHudProps {
-  readonly scaleSummary: ScaleSummary;
-  readonly mode: Mode;
-  readonly onSelectMode: (mode: Mode) => void;
-  readonly scaleDisplayMode: ScaleDisplayMode;
-  readonly onSelectScaleDisplayMode: (mode: ScaleDisplayMode) => void;
-  readonly labelMode: LabelMode;
-  readonly onSelectLabelMode: (labelMode: LabelMode) => void;
-  readonly labelsVisible: boolean;
-  readonly onToggleLabels: () => void;
-  readonly chordLayerEnabled: boolean;
-  readonly onToggleChordLayer: () => void;
-  readonly scaleFingeringEnabled: boolean;
-  readonly scaleFingeringHand: ScaleFingeringHand;
-  readonly scaleFingeringDirection: ScaleFingeringDirection;
-  readonly onToggleScaleFingering: () => void;
-  readonly onSelectScaleFingeringHand: (hand: ScaleFingeringHand) => void;
-  readonly onSelectScaleFingeringDirection: (direction: ScaleFingeringDirection) => void;
-  readonly focusMode: boolean;
-  readonly onToggleFocus: () => void;
-  readonly onOpenTheory: (target: TheoryOverlayContextTarget) => void;
-  readonly colorLegend: readonly ColorLegendItem[];
-  readonly showSecondaryControls: boolean;
-  readonly compact: boolean;
-}
-
 const DIFFICULTY_LABELS = {
   easy: 'легкая',
   medium: 'средняя',
@@ -55,16 +29,97 @@ const SCALE_DISPLAY_MODE_OPTIONS = [
   readonly label: string;
 }[];
 
-export function TopHud({
+export interface KeyIdentityProps {
+  readonly scaleSummary: ScaleSummary;
+  readonly mode: Mode;
+  readonly onSelectMode: (mode: Mode) => void;
+  readonly onOpenTheory: (target: TheoryOverlayContextTarget) => void;
+  readonly compact?: boolean;
+}
+
+/** Текущая тональность с переключателем лада: левый край верхней полосы. */
+export function KeyIdentity({
   scaleSummary,
   mode,
   onSelectMode,
-  scaleDisplayMode,
-  onSelectScaleDisplayMode,
-  labelMode,
-  onSelectLabelMode,
-  labelsVisible,
-  onToggleLabels,
+  onOpenTheory,
+  compact = false
+}: KeyIdentityProps) {
+  const { key } = scaleSummary;
+  const signature =
+    key.keySignature.count === 0
+      ? '♮'
+      : `${key.keySignature.count}${key.keySignature.accidental === 'sharp' ? '#' : 'b'}`;
+
+  return (
+    <section
+      className={`hud-identity hud-panel${compact ? ' hud-identity--compact' : ''}`}
+      aria-label="Текущая тональность"
+    >
+      <div className="hud-identity__title-row">
+        <h1 className="hud-identity__title">{key.displayName}</h1>
+        <button
+          className="hud-info-button"
+          type="button"
+          aria-label="Подробнее о тональности"
+          onClick={() => onOpenTheory('key')}
+        >
+          i
+        </button>
+      </div>
+      <p className="hud-identity__meta">
+        <span title="Знаки при ключе">{signature}</span>
+        <span className="hud-identity__meta-dot" aria-hidden="true" />
+        <span data-difficulty={key.difficulty}>{DIFFICULTY_LABELS[key.difficulty]}</span>
+        {/* Место зарезервировано всегда, чтобы блок не прыгал при смене тональности */}
+        <span
+          className="hud-identity__meta-flag"
+          data-visible={key.recommended ? 'true' : 'false'}
+          aria-hidden={key.recommended ? undefined : 'true'}
+        >
+          <span className="hud-identity__meta-dot" aria-hidden="true" />
+          <span className="hud-identity__meta-gold">★ рекомендована</span>
+        </span>
+      </p>
+      <SegmentedControl
+        label="Лад"
+        value={mode}
+        options={[
+          { value: 'major', label: 'Major' },
+          { value: 'naturalMinor', label: 'Minor', ariaLabel: 'Natural Minor' }
+        ]}
+        onChange={onSelectMode}
+        className="hud-identity__mode"
+      />
+    </section>
+  );
+}
+
+export interface HudActionsProps {
+  readonly showViewMenu: boolean;
+  readonly chordLayerEnabled: boolean;
+  readonly onToggleChordLayer: () => void;
+  readonly scaleFingeringEnabled: boolean;
+  readonly scaleFingeringHand: ScaleFingeringHand;
+  readonly scaleFingeringDirection: ScaleFingeringDirection;
+  readonly onToggleScaleFingering: () => void;
+  readonly onSelectScaleFingeringHand: (hand: ScaleFingeringHand) => void;
+  readonly onSelectScaleFingeringDirection: (direction: ScaleFingeringDirection) => void;
+  readonly scaleDisplayMode: ScaleDisplayMode;
+  readonly onSelectScaleDisplayMode: (mode: ScaleDisplayMode) => void;
+  readonly labelsVisible: boolean;
+  readonly labelMode: LabelMode;
+  readonly onToggleLabels: () => void;
+  readonly onSelectLabelMode: (labelMode: LabelMode) => void;
+  readonly colorLegend: readonly ColorLegendItem[];
+  readonly onOpenTheory: (target: TheoryOverlayContextTarget) => void;
+  readonly focusMode: boolean;
+  readonly onToggleFocus: () => void;
+}
+
+/** Кнопки действий HUD: правый край верхней полосы на десктопе. */
+export function HudActions({
+  showViewMenu,
   chordLayerEnabled,
   onToggleChordLayer,
   scaleFingeringEnabled,
@@ -73,104 +128,49 @@ export function TopHud({
   onToggleScaleFingering,
   onSelectScaleFingeringHand,
   onSelectScaleFingeringDirection,
-  focusMode,
-  onToggleFocus,
-  onOpenTheory,
+  scaleDisplayMode,
+  onSelectScaleDisplayMode,
+  labelsVisible,
+  labelMode,
+  onToggleLabels,
+  onSelectLabelMode,
   colorLegend,
-  showSecondaryControls,
-  compact
-}: TopHudProps) {
-  const { key } = scaleSummary;
-  const signature =
-    key.keySignature.count === 0
-      ? '♮'
-      : `${key.keySignature.count}${key.keySignature.accidental === 'sharp' ? '#' : 'b'}`;
-
+  onOpenTheory,
+  focusMode,
+  onToggleFocus
+}: HudActionsProps) {
   return (
-    <header className="hud-top hud-panel" aria-label="Текущая тональность и режимы">
-      <div className="hud-top__identity">
-        <div className="hud-top__title-block">
-          <p className="hud-eyebrow">Тональность</p>
-          <div className="hud-top__title-row">
-            <h1 className="hud-top__title">{key.displayName}</h1>
-            <button
-              className="hud-info-button"
-              type="button"
-              aria-label="Подробнее о тональности"
-              onClick={() => onOpenTheory('key')}
-            >
-              i
-            </button>
-          </div>
-          <p className="hud-top__meta">
-            <span title="Знаки при ключе">{signature}</span>
-            <span className="hud-top__meta-dot" aria-hidden="true" />
-            <span data-difficulty={key.difficulty}>{DIFFICULTY_LABELS[key.difficulty]}</span>
-            {/* Место зарезервировано всегда, чтобы шапка не прыгала при смене тональности */}
-            <span
-              className="hud-top__meta-flag"
-              data-visible={key.recommended ? 'true' : 'false'}
-              aria-hidden={key.recommended ? undefined : 'true'}
-            >
-              <span className="hud-top__meta-dot" aria-hidden="true" />
-              <span className="hud-top__meta-gold">★ рекомендована</span>
-            </span>
-          </p>
-        </div>
-        <span className="hud-top__divider" aria-hidden="true" />
-        <SegmentedControl
-          label="Лад"
-          value={mode}
-          options={[
-            { value: 'major', label: 'Major' },
-            { value: 'naturalMinor', label: 'Minor', ariaLabel: 'Natural Minor' }
-          ]}
-          onChange={onSelectMode}
-          className="hud-top__mode"
+    <div className="hud-actions">
+      {showViewMenu ? (
+        <ViewMenu
+          chordLayerEnabled={chordLayerEnabled}
+          onToggleChordLayer={onToggleChordLayer}
+          scaleFingeringEnabled={scaleFingeringEnabled}
+          scaleFingeringHand={scaleFingeringHand}
+          scaleFingeringDirection={scaleFingeringDirection}
+          onToggleScaleFingering={onToggleScaleFingering}
+          onSelectScaleFingeringHand={onSelectScaleFingeringHand}
+          onSelectScaleFingeringDirection={onSelectScaleFingeringDirection}
+          scaleDisplayMode={scaleDisplayMode}
+          onSelectScaleDisplayMode={onSelectScaleDisplayMode}
+          labelsVisible={labelsVisible}
+          labelMode={labelMode}
+          onToggleLabels={onToggleLabels}
+          onSelectLabelMode={onSelectLabelMode}
+          colorLegend={colorLegend}
+          onOpenTheory={onOpenTheory}
         />
-      </div>
-
-      {!compact ? (
-        <div className="hud-top__controls">
-          {showSecondaryControls ? (
-            <ViewMenu
-              chordLayerEnabled={chordLayerEnabled}
-              onToggleChordLayer={onToggleChordLayer}
-              scaleFingeringEnabled={scaleFingeringEnabled}
-              scaleFingeringHand={scaleFingeringHand}
-              scaleFingeringDirection={scaleFingeringDirection}
-              onToggleScaleFingering={onToggleScaleFingering}
-              onSelectScaleFingeringHand={onSelectScaleFingeringHand}
-              onSelectScaleFingeringDirection={onSelectScaleFingeringDirection}
-              scaleDisplayMode={scaleDisplayMode}
-              onSelectScaleDisplayMode={onSelectScaleDisplayMode}
-              labelsVisible={labelsVisible}
-              labelMode={labelMode}
-              onToggleLabels={onToggleLabels}
-              onSelectLabelMode={onSelectLabelMode}
-              colorLegend={colorLegend}
-              onOpenTheory={onOpenTheory}
-            />
-          ) : null}
-          <button
-            className="hud-action"
-            type="button"
-            onClick={() => onOpenTheory('key')}
-          >
-            Теория
-          </button>
-          <button
-            className="hud-action"
-            type="button"
-            aria-pressed={focusMode}
-            data-active={focusMode ? 'true' : 'false'}
-            onClick={onToggleFocus}
-          >
-            Фокус
-          </button>
-        </div>
       ) : null}
-    </header>
+      <button
+        className="hud-action"
+        type="button"
+        aria-pressed={focusMode}
+        data-active={focusMode ? 'true' : 'false'}
+        onClick={onToggleFocus}
+      >
+        Фокус
+      </button>
+    </div>
   );
 }
 

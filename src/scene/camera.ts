@@ -26,11 +26,12 @@ export const DESKTOP_HUD_SIDE_PX = 628;
 /**
  * Подъем точки взгляда опускает клавиатуру в кадре:
  * сверху экран занят HUD-панелями (прогрессия, на mobile — половина экрана).
+ * На desktop верхний HUD — одна полоса, поэтому клавиатура стоит выше.
  */
 const TARGET_Y_BY_VIEWPORT: Record<KeyboardViewport, number> = {
-  desktop: 0.2,
+  desktop: -1.6,
   tablet: 0.2,
-  mobile: 0.2,
+  mobile: -0.8,
 };
 
 export function getStudioCameraPlacement(

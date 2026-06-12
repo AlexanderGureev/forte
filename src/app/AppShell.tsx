@@ -8,7 +8,7 @@ import { RecommendedKeys } from '../ui/hud/RecommendedKeys';
 import { ScaleFingeringControl } from '../ui/hud/ScaleFingeringControl';
 import { ScaleStrip } from '../ui/hud/ScaleStrip';
 import { ScoreStaff } from '../ui/hud/ScoreStaff';
-import { ScaleDisplayModeControl, TopHud } from '../ui/hud/TopHud';
+import { HudActions, KeyIdentity, ScaleDisplayModeControl } from '../ui/hud/TopHud';
 import {
   TheoryOverlay,
   usePrimitiveHotkeys,
@@ -172,31 +172,47 @@ export function AppShell() {
       </div>
 
       <div className="hud" data-layout={isWide ? 'wide' : 'compact'}>
-        <TopHud
-          scaleSummary={scaleSummary}
-          mode={store.mode}
-          onSelectMode={store.selectMode}
-          scaleDisplayMode={store.scaleDisplayMode}
-          onSelectScaleDisplayMode={store.setScaleDisplayMode}
-          labelMode={store.labelMode}
-          onSelectLabelMode={store.setLabelMode}
-          labelsVisible={store.labelsVisible}
-          onToggleLabels={store.toggleLabelsVisible}
-          chordLayerEnabled={store.chordLayerEnabled}
-          onToggleChordLayer={store.toggleChordLayer}
-          scaleFingeringEnabled={store.scaleFingeringEnabled}
-          scaleFingeringHand={store.scaleFingeringHand}
-          scaleFingeringDirection={store.scaleFingeringDirection}
-          onToggleScaleFingering={store.toggleScaleFingering}
-          onSelectScaleFingeringHand={store.setScaleFingeringHand}
-          onSelectScaleFingeringDirection={store.setScaleFingeringDirection}
-          focusMode={store.focusMode}
-          onToggleFocus={store.toggleFocusMode}
-          onOpenTheory={store.openTheoryOverlay}
-          colorLegend={colorLegend}
-          showSecondaryControls={uiConfig.visiblePanels.theoryHints}
-          compact={!isWide}
-        />
+        <div className="hud-topstrip">
+          <KeyIdentity
+            scaleSummary={scaleSummary}
+            mode={store.mode}
+            onSelectMode={store.selectMode}
+            onOpenTheory={store.openTheoryOverlay}
+            compact={!isWide}
+          />
+          <ProgressionHud
+            presets={progressionPresets}
+            selectedProgressionId={store.selectedProgressionId}
+            onSelectPreset={store.selectProgressionPreset}
+            cards={progressionCards}
+            onSelectStep={store.selectActiveProgressionStep}
+            status={activeChordStatus}
+            onOpenTheory={store.openTheoryOverlay}
+          />
+          {isWide ? (
+            <HudActions
+              showViewMenu={uiConfig.visiblePanels.theoryHints}
+              chordLayerEnabled={store.chordLayerEnabled}
+              onToggleChordLayer={store.toggleChordLayer}
+              scaleFingeringEnabled={store.scaleFingeringEnabled}
+              scaleFingeringHand={store.scaleFingeringHand}
+              scaleFingeringDirection={store.scaleFingeringDirection}
+              onToggleScaleFingering={store.toggleScaleFingering}
+              onSelectScaleFingeringHand={store.setScaleFingeringHand}
+              onSelectScaleFingeringDirection={store.setScaleFingeringDirection}
+              scaleDisplayMode={store.scaleDisplayMode}
+              onSelectScaleDisplayMode={store.setScaleDisplayMode}
+              labelsVisible={store.labelsVisible}
+              labelMode={store.labelMode}
+              onToggleLabels={store.toggleLabelsVisible}
+              onSelectLabelMode={store.setLabelMode}
+              colorLegend={colorLegend}
+              onOpenTheory={store.openTheoryOverlay}
+              focusMode={store.focusMode}
+              onToggleFocus={store.toggleFocusMode}
+            />
+          ) : null}
+        </div>
 
         {isWide && uiConfig.visiblePanels.keySelector ? (
           <aside className="hud-rail hud-rail--left" data-collapsed={leftCollapsed ? 'true' : 'false'}>
@@ -207,7 +223,7 @@ export function AppShell() {
                 aria-expanded="false"
                 onClick={() => setLeftCollapsedOverride(false)}
               >
-                Тональность
+                {scaleSummary.key.displayName}
               </button>
             ) : (
               makeKeysPanel(() => setLeftCollapsedOverride(true))
@@ -231,18 +247,6 @@ export function AppShell() {
             )}
           </aside>
         ) : null}
-
-        <div className="hud-center">
-          <ProgressionHud
-            presets={progressionPresets}
-            selectedProgressionId={store.selectedProgressionId}
-            onSelectPreset={store.selectProgressionPreset}
-            cards={progressionCards}
-            onSelectStep={store.selectActiveProgressionStep}
-            status={activeChordStatus}
-            onOpenTheory={store.openTheoryOverlay}
-          />
-        </div>
 
         <div className="hud-bottom">
           {store.scaleDisplayMode === 'strip' ? (

@@ -30,10 +30,9 @@
 .hud[data-layout='wide'] {
   display: grid;
   grid-template-columns: 272px minmax(0, 1fr) 272px;
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-rows: auto 1fr auto;
   grid-template-areas:
     'top top top'
-    'left center right'
     'left . right'
     'bottom bottom bottom';
   gap: 10px;
@@ -80,47 +79,54 @@
   text-transform: uppercase;
 }
 
-/* ---------- Верхний HUD ---------- */
+/* ---------- Верхняя полоса HUD ---------- */
 
-.hud-top {
+/* Одна полоса: [тональность] [прогрессия] [действия]. Боковые колонки 1fr
+   равны между собой, поэтому прогрессия стоит точно по центру экрана. */
+.hud-topstrip {
   position: relative;
   /* Поповер меню «Вид» должен рисоваться поверх боковых панелей */
   z-index: 25;
   display: grid;
   grid-area: top;
-  grid-template-areas: 'identity controls';
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 8px 18px;
-  align-items: center;
-  padding: 6px 14px;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  min-width: 0;
+  pointer-events: none;
 }
 
-/* Фиксированная ширина блока тональности: смена ключа и лада
-   не двигает Major/Minor и остальные контролы */
-.hud[data-layout='wide'] .hud-top__title-block {
-  width: 224px;
+.hud-topstrip > .hud-identity {
+  justify-self: start;
 }
 
-.hud-top__identity {
-  display: flex;
-  grid-area: identity;
-  gap: 16px;
-  align-items: center;
+.hud-topstrip > .hud-actions {
+  justify-self: end;
 }
 
-.hud-top__title-block {
+.hud-identity {
   display: grid;
-  gap: 3px;
+  gap: 6px;
+  justify-items: start;
+  padding: 10px 14px;
 }
 
-.hud-top__title-row {
+/* Та же ширина, что у панели «Тональность» под ним: левый край выглядит одной колонкой */
+.hud[data-layout='wide'] .hud-topstrip > .hud-identity {
+  width: 236px;
+}
+
+/* Кнопка «i» прижата к правому краю панели, как у остальных панелей */
+.hud-identity__title-row {
   display: flex;
   gap: 10px;
   align-items: center;
+  justify-content: space-between;
+  width: 100%;
 }
 
-.hud-top__title {
-  /* min-width фиксирует ширину под самое длинное имя, чтобы шапка не ездила */
+.hud-identity__title {
+  /* min-width фиксирует ширину под самое длинное имя, чтобы блок не ездил */
   min-width: 8ch;
   margin: 0;
   font-family: var(--font-display);
@@ -132,10 +138,14 @@
   white-space: nowrap;
 }
 
-.hud-top__meta {
+.hud-identity__meta {
   display: flex;
   gap: 7px;
   align-items: center;
+  /* Скрытый резерв «★ рекомендована» не должен распирать панель:
+     иначе строка с кнопкой «i» выезжает за фиксированную ширину */
+  max-width: 100%;
+  overflow: hidden;
   margin: 0;
   color: var(--ink-dim);
   font-size: 0.76rem;
@@ -144,34 +154,33 @@
   white-space: nowrap;
 }
 
-.hud-top__meta-dot {
+.hud-identity__meta-dot {
   width: 3px;
   height: 3px;
   border-radius: 50%;
   background: var(--ink-faint);
 }
 
-.hud-top__meta-gold {
+.hud-identity__meta-gold {
   color: var(--gold);
 }
 
 /* Флаг «рекомендована» всегда занимает место — без скачков ширины */
-.hud-top__meta-flag {
+.hud-identity__meta-flag {
   display: flex;
   gap: 7px;
   align-items: center;
 }
 
-.hud-top__meta-flag[data-visible='false'] {
+.hud-identity__meta-flag[data-visible='false'] {
   visibility: hidden;
 }
 
-.hud-top__divider {
-  flex: none;
-  align-self: center;
-  width: 1px;
-  height: 30px;
-  background: var(--line-strong);
+.hud-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  pointer-events: auto;
 }
 
 .hud-scale-strip {
@@ -373,14 +382,6 @@
   max-width: 100%;
 }
 
-.hud-top__controls {
-  display: flex;
-  grid-area: controls;
-  gap: 10px;
-  align-items: center;
-  justify-self: end;
-}
-
 /* ---------- Меню «Вид» ---------- */
 
 .hud-view-menu {
@@ -441,13 +442,15 @@
   align-items: center;
 }
 
-/* Сегменты в шапке и шите: лейбл скрыт визуально, контролы на одной оси */
-.hud-top .primitive-segmented-control,
+/* Сегменты в шапке, меню «Вид» и шите: лейбл скрыт визуально, контролы на одной оси */
+.hud-identity .primitive-segmented-control,
+.hud-actions .primitive-segmented-control,
 .sheet .primitive-segmented-control {
   gap: 0;
 }
 
-.hud-top .primitive-segmented-control__label,
+.hud-identity .primitive-segmented-control__label,
+.hud-actions .primitive-segmented-control__label,
 .sheet .primitive-segmented-control__label {
   position: absolute;
   overflow: hidden;
@@ -457,12 +460,14 @@
   white-space: nowrap;
 }
 
-.hud-top .primitive-segmented-control__options {
+.hud-identity .primitive-segmented-control__options,
+.hud-actions .primitive-segmented-control__options {
   border-radius: 999px;
   padding: 3px;
 }
 
-.hud-top .primitive-segmented-control__option {
+.hud-identity .primitive-segmented-control__option,
+.hud-actions .primitive-segmented-control__option {
   min-width: 56px;
   min-height: 26px;
   border-radius: 999px;
@@ -787,15 +792,6 @@
 
 /* ---------- Прогрессия ---------- */
 
-.hud-center {
-  display: flex;
-  grid-area: center;
-  align-items: flex-start;
-  justify-content: center;
-  min-width: 0;
-  pointer-events: none;
-}
-
 .hud-progression {
   display: grid;
   gap: 6px;
@@ -973,23 +969,74 @@
 
 /* ---------- Компактный layout ---------- */
 
-.hud[data-layout='compact'] .hud-top {
-  grid-template-areas: 'identity';
+/* Тональность и прогрессия слиты в один вертикальный блок */
+.hud[data-layout='compact'] .hud-topstrip {
+  display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 10px;
-  padding: 10px 12px;
+  gap: 8px;
+  justify-items: stretch;
 }
 
-.hud[data-layout='compact'] .hud-top__identity {
+/* Перебивает десктопный justify-self: start — плашка на всю ширину */
+.hud[data-layout='compact'] .hud-topstrip > .hud-identity {
+  justify-self: stretch;
+}
+
+/* Слитная строка: название + «i» + мета + Major/Minor */
+.hud-identity--compact {
+  display: flex;
   flex-wrap: wrap;
+  gap: 6px 12px;
+  align-items: center;
+  padding: 8px 12px;
 }
 
-.hud[data-layout='compact'] .hud-top__title {
-  font-size: 1.35rem;
+.hud-identity--compact .hud-identity__title-row {
+  width: auto;
+  justify-content: flex-start;
 }
 
-.hud[data-layout='compact'] .hud-center {
-  justify-content: center;
+.hud-identity--compact .hud-identity__title {
+  min-width: 0;
+  font-size: 1.3rem;
+}
+
+.hud-identity--compact .hud-identity__mode {
+  margin-left: auto;
+}
+
+.hud[data-layout='compact'] .hud-progression {
+  justify-items: stretch;
+}
+
+/* Без переноса по центру: метка и статус в одной строке, пресеты под ними */
+.hud[data-layout='compact'] .hud-progression__header {
+  display: grid;
+  grid-template-areas:
+    'label status'
+    'presets presets';
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px 12px;
+  align-items: center;
+  min-width: 0;
+  width: 100%;
+}
+
+.hud[data-layout='compact'] .hud-progression__header .hud-eyebrow {
+  grid-area: label;
+}
+
+.hud[data-layout='compact'] .hud-progression__presets {
+  grid-area: presets;
+}
+
+.hud[data-layout='compact'] .hud-progression__status-group {
+  grid-area: status;
+  justify-self: end;
+}
+
+.hud[data-layout='compact'] .hud-progression__status {
+  min-width: 0;
 }
 
 /* На планшетах и мобильных полоса гаммы живет внизу, над тулбаром */
@@ -1015,27 +1062,22 @@
     padding: 10px;
   }
 
-  .hud[data-layout='compact'] .hud-top {
-    gap: 8px 14px;
-    padding: 10px 12px;
+  .hud-identity--compact {
+    padding: 8px 12px;
   }
 
-  .hud[data-layout='compact'] .hud-top__title {
-    font-size: 1.25rem;
-  }
-
-  .hud[data-layout='compact'] .hud-top__divider {
-    display: none;
+  .hud-identity--compact .hud-identity__title {
+    font-size: 1.2rem;
   }
 
   /* На узких экранах сегменты остаются горизонтальными */
-  .hud-top .primitive-segmented-control__options,
+  .hud-identity .primitive-segmented-control__options,
   .sheet .primitive-segmented-control__options {
     grid-auto-flow: column;
     width: fit-content;
   }
 
-  .hud-top .primitive-segmented-control__option,
+  .hud-identity .primitive-segmented-control__option,
   .sheet .primitive-segmented-control__option {
     width: auto;
     min-width: 56px;

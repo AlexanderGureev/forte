@@ -173,14 +173,6 @@
   padding: 14px;
 }
 
-.primitive-key-selector__header {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 12px;
-  align-items: baseline;
-  justify-content: space-between;
-}
-
 .primitive-key-selector__title,
 .primitive-segmented-control__label {
   color: #f7f4ef;
@@ -188,14 +180,22 @@
   font-weight: 800;
 }
 
-.primitive-key-selector__select-label {
+.primitive-key-selector__group {
+  display: grid;
+  gap: 7px;
+}
+
+.primitive-key-selector__group-label {
   color: #9aa5ad;
-  font-size: 0.78rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .primitive-key-selector__recommended {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -210,11 +210,42 @@
 }
 
 .primitive-key-selector__recommended-key {
-  display: inline-grid;
-  gap: 2px;
-  min-width: 92px;
-  padding: 8px 10px;
+  display: grid;
+  row-gap: 3px;
+  align-content: center;
+  justify-items: start;
+  min-height: 54px;
+  padding: 7px 10px;
   text-align: left;
+  transition: border-color 0.15s ease;
+}
+
+.primitive-key-selector__recommended-key:not(
+    :disabled,
+    .primitive-key-selector__recommended-key--selected
+  ):hover {
+  border-color: rgba(228, 179, 99, 0.55);
+  background: rgba(247, 244, 239, 0.1);
+}
+
+.primitive-key-selector__name {
+  display: flex;
+  gap: 5px;
+  align-items: baseline;
+}
+
+.primitive-key-selector__tonic {
+  font-size: 1.12rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.primitive-key-selector__mode {
+  color: #9aa5ad;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
 }
 
 .primitive-key-selector__recommended-key--selected,
@@ -224,10 +255,23 @@
   background: #e4b363;
 }
 
+.primitive-key-selector__recommended-key--selected .primitive-key-selector__mode {
+  color: rgba(21, 23, 29, 0.66);
+}
+
 .primitive-key-selector__same-mode {
-  color: inherit;
-  font-size: 0.68rem;
-  opacity: 0.72;
+  border-radius: 999px;
+  padding: 1px 7px;
+  color: #7fd0c2;
+  background: rgba(87, 179, 163, 0.14);
+  font-size: 0.6rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.primitive-key-selector__recommended-key--selected .primitive-key-selector__same-mode {
+  color: #2c2113;
+  background: rgba(21, 23, 29, 0.14);
 }
 
 .primitive-key-selector__select {
