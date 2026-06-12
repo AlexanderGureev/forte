@@ -37,6 +37,14 @@ function keyByPitchClass(
   return key as KeyboardKeyViewModel;
 }
 
+function keyById(keys: readonly KeyboardKeyViewModel[], id: string): KeyboardKeyViewModel {
+  const key = keys.find((candidate) => candidate.id === id);
+
+  expect(key).toBeDefined();
+
+  return key as KeyboardKeyViewModel;
+}
+
 function sectionById(
   model: TheoryOverlayModel,
   id: TheoryOverlaySection['id']
@@ -61,6 +69,9 @@ describe('app state and selectors', () => {
       activeProgressionStepIndex: 0,
       selectedChordDegree: null,
       chordLayerEnabled: true,
+      scaleFingeringEnabled: false,
+      scaleFingeringHand: 'right',
+      scaleFingeringDirection: 'ascending',
       labelMode: 'notes',
       labelsVisible: true,
       focusMode: false,
@@ -89,11 +100,23 @@ describe('app state and selectors', () => {
       selected: true,
       sameMode: true
     });
-    expect(selectColorLegend().map((item) => item.id)).toEqual([
+    expect(selectColorLegend(state()).map((item) => item.id)).toEqual([
       'inScale',
       'tonic',
       'activeChord',
+      'chordRoot',
       'diminished'
+    ]);
+
+    state().setScaleFingeringEnabled(true);
+    expect(selectColorLegend(state()).map((item) => item.id)).toEqual([
+      'inScale',
+      'tonic',
+      'activeChord',
+      'chordRoot',
+      'diminished',
+      'fingering',
+      'fingeringOnChord'
     ]);
   });
 
@@ -300,15 +323,67 @@ describe('app state and selectors', () => {
     });
   });
 
+  it('adds optional scale fingering without replacing note or degree labels', () => {
+    expect(selectScaleSummary(state()).scaleFingering).toBeNull();
+
+    state().toggleScaleFingering();
+
+    expect(selectScaleSummary(state()).scaleFingering).toMatchObject({
+      hand: 'right',
+      direction: 'ascending',
+      patternLabel: '1-2-3-1-2-3-4-5'
+    });
+
+    const ascendingKeyboard = selectKeyboardViewModel(state(), 'desktop');
+
+    expect(keyById(ascendingKeyboard.keys, '0-3')).toMatchObject({
+      visibleLabel: 'C',
+      fingeringLabel: null
+    });
+    expect(keyById(ascendingKeyboard.keys, '0-4')).toMatchObject({
+      visibleLabel: 'C',
+      fingeringLabel: '1'
+    });
+    expect(keyById(ascendingKeyboard.keys, '5-4')).toMatchObject({
+      visibleLabel: 'F',
+      fingeringLabel: '1'
+    });
+    expect(keyById(ascendingKeyboard.keys, '0-5')).toMatchObject({
+      visibleLabel: 'C',
+      fingeringLabel: '5'
+    });
+
+    state().setScaleFingeringDirection('descending');
+
+    const descendingKeyboard = selectKeyboardViewModel(state(), 'desktop');
+
+    expect(keyById(descendingKeyboard.keys, '0-5')).toMatchObject({
+      fingeringLabel: '5'
+    });
+    expect(keyById(descendingKeyboard.keys, '11-4')).toMatchObject({
+      noteLabel: 'B',
+      fingeringLabel: '4'
+    });
+    expect(keyById(descendingKeyboard.keys, '0-4')).toMatchObject({
+      fingeringLabel: '1'
+    });
+  });
+
   it('toggles independent session UI flags and closes theory overlay without persistence', () => {
     state().toggleChordLayer();
     state().toggleLabelsVisible();
+    state().toggleScaleFingering();
+    state().setScaleFingeringHand('left');
+    state().setScaleFingeringDirection('descending');
     state().toggleFocusMode();
     state().openTheoryOverlay('progression');
 
     expect(state()).toMatchObject({
       chordLayerEnabled: false,
       labelsVisible: false,
+      scaleFingeringEnabled: true,
+      scaleFingeringHand: 'left',
+      scaleFingeringDirection: 'descending',
       focusMode: true,
       theoryOverlay: {
         isOpen: true,
@@ -346,6 +421,7 @@ describe('app state and selectors', () => {
       'key',
       'scaleFormula',
       'scaleNotes',
+      'scaleFingering',
       'keySignature',
       'diatonicChords',
       'activeChord',
@@ -367,6 +443,13 @@ describe('app state and selectors', () => {
         { label: 'Связь', value: 'Параллельный мажор' },
         { label: 'Тональность', value: 'F Major' }
       ]
+    });
+    expect(sectionById(overlay, 'scaleFingering')).toMatchObject({
+      highlighted: false,
+      rows: expect.arrayContaining([
+        { label: 'Ноты', value: 'D - E - F - G - A - Bb - C - D' },
+        { label: 'Правая вверх', value: '1-2-3-1-2-3-4-5' }
+      ])
     });
   });
 });

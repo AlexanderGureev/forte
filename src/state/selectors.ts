@@ -1,4 +1,5 @@
 import { buildDiatonicTriads } from '../music/chords';
+import { buildScaleFingering, buildScaleFingeringSet } from '../music/fingerings';
 import { RECOMMENDED_KEYS, resolveKey } from '../music/keys';
 import { PHYSICAL_PITCH_CLASSES, isBlackKeyPitchClass } from '../music/note-spelling';
 import { getRelativeKey, materializeProgression } from '../music/progressions';
@@ -24,6 +25,7 @@ import type {
   ProgressionId,
   Scale,
   ScaleDegree,
+  ScaleFingering,
   ScaleNote,
   TheoryOverlayModel
 } from '../music/types';
@@ -36,6 +38,7 @@ export interface ScaleSummary {
   readonly degreeLabels: readonly DegreeLabel[];
   readonly keySignature: KeySignature;
   readonly relativeKey: ReturnType<typeof getRelativeKey>;
+  readonly scaleFingering: ScaleFingering | null;
 }
 
 export interface ChordCardViewModel {
@@ -103,9 +106,28 @@ const COLOR_LEGEND_ITEMS = [
     description: 'ноты текущего аккорда поверх слоя гаммы'
   },
   {
+    id: 'chordRoot',
+    label: 'Начало аккорда',
+    description: 'белое кольцо — нота, с которой начинать активный аккорд'
+  },
+  {
     id: 'diminished',
     label: 'Уменьшенный (dim)',
     description: 'напряженный diminished-аккорд'
+  }
+] as const satisfies readonly ColorLegendItem[];
+
+/** Показываются только при включенной аппликатуре гаммы. */
+const FINGERING_LEGEND_ITEMS = [
+  {
+    id: 'fingering',
+    label: 'Палец гаммы',
+    description: 'золотой бейдж с номером пальца на ноте гаммы'
+  },
+  {
+    id: 'fingeringOnChord',
+    label: 'Палец на ноте аккорда',
+    description: 'темный бейдж — номер пальца на подсвеченной ноте аккорда'
   }
 ] as const satisfies readonly ColorLegendItem[];
 
@@ -124,7 +146,8 @@ export function selectScaleSummary(state: AppState): ScaleSummary {
     noteNames: scale.notes.map((note) => note.name),
     degreeLabels: scale.notes.map((note) => formatScaleDegreeLabel(key.mode, note.degree)),
     keySignature: key.keySignature,
-    relativeKey: getRelativeKey(key)
+    relativeKey: getRelativeKey(key),
+    scaleFingering: selectScaleFingeringForScale(state, key, scale)
   };
 }
 
@@ -210,8 +233,12 @@ export function selectRecommendedKeys(state: AppState): readonly RecommendedKeyV
   });
 }
 
-export function selectColorLegend(): readonly ColorLegendItem[] {
-  return COLOR_LEGEND_ITEMS;
+export function selectColorLegend(state: AppState): readonly ColorLegendItem[] {
+  if (!state.scaleFingeringEnabled) {
+    return COLOR_LEGEND_ITEMS;
+  }
+
+  return [...COLOR_LEGEND_ITEMS, ...FINGERING_LEGEND_ITEMS];
 }
 
 export function selectKeyboardViewModel(
@@ -219,13 +246,15 @@ export function selectKeyboardViewModel(
   viewport: KeyboardViewport
 ): KeyboardViewModel {
   const key = selectCurrentKey(state);
+  const scale = buildScale(key);
   const activeChordStatus = selectActiveChordStatus(state);
 
   return createKeyboardViewModel({
     key,
-    scale: buildScale(key),
+    scale,
     activeChord: activeChordStatus.chord,
     chordLayerEnabled: state.chordLayerEnabled,
+    scaleFingering: selectScaleFingeringForScale(state, key, scale),
     labelMode: state.labelMode,
     labelsVisible: state.labelsVisible,
     viewport
@@ -234,19 +263,21 @@ export function selectKeyboardViewModel(
 
 export function selectTheoryOverlayModel(state: AppState): TheoryOverlayModel {
   const key = selectCurrentKey(state);
+  const scale = buildScale(key);
   const activeChordStatus = selectActiveChordStatus(state);
 
   return createTheoryOverlayModel({
     isOpen: state.theoryOverlay.isOpen,
     contextTarget: state.theoryOverlay.contextTarget,
     key,
-    scale: buildScale(key),
+    scale,
     chords: buildDiatonicTriads(key),
     activeChord: activeChordStatus.chord,
     activeChordSource: activeChordStatus.source,
     activeProgressionStepIndex: activeChordStatus.stepIndex,
     progression: selectCurrentProgression(state),
-    colorLegend: selectColorLegend()
+    colorLegend: selectColorLegend(state),
+    scaleFingerings: buildScaleFingeringSet({ key, scale })
   });
 }
 
@@ -269,6 +300,23 @@ function toProgressionChordStatus(
     chordName: step.chordName,
     chord: step.chord
   };
+}
+
+function selectScaleFingeringForScale(
+  state: AppState,
+  key: KeyDefinition,
+  scale: Scale
+): ScaleFingering | null {
+  if (!state.scaleFingeringEnabled) {
+    return null;
+  }
+
+  return buildScaleFingering({
+    key,
+    scale,
+    hand: state.scaleFingeringHand,
+    direction: state.scaleFingeringDirection
+  });
 }
 
 function clampProgressionStepIndex(

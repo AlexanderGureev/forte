@@ -8,6 +8,8 @@ import type {
   Mode,
   ProgressionId,
   ProgressionPreset,
+  ScaleFingeringDirection,
+  ScaleFingeringHand,
   ScaleDegree,
   TheoryOverlayContextTarget
 } from '../music/types';
@@ -24,6 +26,9 @@ export interface AppState {
   readonly activeProgressionStepIndex: number;
   readonly selectedChordDegree: ScaleDegree | null;
   readonly chordLayerEnabled: boolean;
+  readonly scaleFingeringEnabled: boolean;
+  readonly scaleFingeringHand: ScaleFingeringHand;
+  readonly scaleFingeringDirection: ScaleFingeringDirection;
   readonly labelMode: LabelMode;
   readonly labelsVisible: boolean;
   readonly focusMode: boolean;
@@ -38,6 +43,10 @@ export interface AppActions {
   readonly selectChordDegree: (degree: ScaleDegree) => void;
   readonly setChordLayerEnabled: (enabled: boolean) => void;
   readonly toggleChordLayer: () => void;
+  readonly setScaleFingeringEnabled: (enabled: boolean) => void;
+  readonly toggleScaleFingering: () => void;
+  readonly setScaleFingeringHand: (hand: ScaleFingeringHand) => void;
+  readonly setScaleFingeringDirection: (direction: ScaleFingeringDirection) => void;
   readonly setLabelMode: (labelMode: LabelMode) => void;
   readonly setLabelsVisible: (visible: boolean) => void;
   readonly toggleLabelsVisible: () => void;
@@ -63,6 +72,12 @@ const THEORY_OVERLAY_CONTEXT_TARGETS = [
   'colorLegend'
 ] as const satisfies readonly TheoryOverlayContextTarget[];
 
+const SCALE_FINGERING_HANDS = ['right', 'left'] as const satisfies readonly ScaleFingeringHand[];
+const SCALE_FINGERING_DIRECTIONS = [
+  'ascending',
+  'descending'
+] as const satisfies readonly ScaleFingeringDirection[];
+
 export function createInitialAppState(): AppState {
   const key = resolveKey(DEFAULT_KEY_SELECTION);
 
@@ -73,6 +88,9 @@ export function createInitialAppState(): AppState {
     activeProgressionStepIndex: 0,
     selectedChordDegree: null,
     chordLayerEnabled: true,
+    scaleFingeringEnabled: false,
+    scaleFingeringHand: 'right',
+    scaleFingeringDirection: 'ascending',
     labelMode: 'notes',
     labelsVisible: true,
     focusMode: false,
@@ -180,6 +198,24 @@ export const useAppStore = create<AppStore>()((set) => ({
     set((state) => ({ chordLayerEnabled: !state.chordLayerEnabled }));
   },
 
+  setScaleFingeringEnabled: (enabled) => {
+    set({ scaleFingeringEnabled: enabled });
+  },
+
+  toggleScaleFingering: () => {
+    set((state) => ({ scaleFingeringEnabled: !state.scaleFingeringEnabled }));
+  },
+
+  setScaleFingeringHand: (hand) => {
+    assertScaleFingeringHand(hand);
+    set({ scaleFingeringHand: hand });
+  },
+
+  setScaleFingeringDirection: (direction) => {
+    assertScaleFingeringDirection(direction);
+    set({ scaleFingeringDirection: direction });
+  },
+
   setLabelMode: (labelMode) => {
     assertLabelMode(labelMode);
     set({ labelMode });
@@ -272,6 +308,18 @@ function assertSupportedMode(mode: Mode): void {
 function assertLabelMode(labelMode: LabelMode): void {
   if (labelMode !== 'notes' && labelMode !== 'degrees') {
     throw new Error(`Unsupported label mode "${labelMode}". Expected "notes" or "degrees".`);
+  }
+}
+
+function assertScaleFingeringHand(hand: ScaleFingeringHand): void {
+  if (!SCALE_FINGERING_HANDS.some((candidate) => candidate === hand)) {
+    throw new Error(`Unsupported scale fingering hand "${hand}".`);
+  }
+}
+
+function assertScaleFingeringDirection(direction: ScaleFingeringDirection): void {
+  if (!SCALE_FINGERING_DIRECTIONS.some((candidate) => candidate === direction)) {
+    throw new Error(`Unsupported scale fingering direction "${direction}".`);
   }
 }
 

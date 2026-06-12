@@ -1,7 +1,6 @@
 import { getRelativeKey } from './progressions';
 import { PHYSICAL_PITCH_CLASSES, isBlackKeyPitchClass } from './note-spelling';
 import type {
-  ColorLegendItem,
   DegreeLabel,
   DiatonicChord,
   KeyboardHighlightLayer,
@@ -15,6 +14,9 @@ import type {
   PhysicalPitchClass,
   Scale,
   ScaleDegree,
+  ScaleFingering,
+  ScaleFingeringDirection,
+  ScaleFingeringHand,
   ScaleNote,
   TheoryOverlayContextTarget,
   TheoryOverlayInput,
@@ -60,6 +62,11 @@ export function createKeyboardViewModel(input: KeyboardViewModelInput): Keyboard
   const activeChordPitchClasses = new Set(
     input.activeChord?.notes.map((note) => note.physicalPitchClass) ?? []
   );
+  const fingeringLabelByKeyId = getFingeringLabelByKeyId({
+    fingering: input.scaleFingering,
+    startOctave,
+    octaveCount
+  });
 
   const keys = Array.from({ length: octaveCount * PHYSICAL_PITCH_CLASSES.length }, (_, index) => {
     const physicalPitchClass = PHYSICAL_PITCH_CLASSES[index % PHYSICAL_PITCH_CLASSES.length];
@@ -92,6 +99,7 @@ export function createKeyboardViewModel(input: KeyboardViewModelInput): Keyboard
         labelMode: input.labelMode,
         labelsVisible: input.labelsVisible
       }),
+      fingeringLabel: fingeringLabelByKeyId.get(`${physicalPitchClass}-${octave}`) ?? null,
       highlightLayers
     } satisfies KeyboardKeyViewModel;
   });
@@ -124,6 +132,12 @@ export function createTheoryOverlayModel(input: TheoryOverlayInput): TheoryOverl
         (note) => `${formatScaleDegreeLabel(input.key.mode, note.degree)}: ${note.name}`
       )
     ),
+    createSection(
+      input.contextTarget,
+      'scaleFingering',
+      'Аппликатура гаммы',
+      buildScaleFingeringRows(input.scaleFingerings)
+    ),
     createSection(input.contextTarget, 'keySignature', 'Знаки при ключе', [
       { label: 'Тип', value: formatKeySignatureType(input.key.keySignature) },
       { label: 'Количество', value: String(input.key.keySignature.count) },
@@ -133,8 +147,10 @@ export function createTheoryOverlayModel(input: TheoryOverlayInput): TheoryOverl
       input.contextTarget,
       'diatonicChords',
       'Диатонические аккорды',
-      [],
-      input.chords.map(formatChord)
+      input.chords.map((chord) => ({
+        label: chord.romanDegree,
+        value: `${chord.name} · ${chord.notes.map((note) => note.name).join(' - ')}`
+      }))
     ),
     createSection(input.contextTarget, 'activeChord', 'Активный аккорд', [
       { label: 'Аккорд', value: input.activeChord?.name ?? 'Нет' },
@@ -163,8 +179,7 @@ export function createTheoryOverlayModel(input: TheoryOverlayInput): TheoryOverl
       input.contextTarget,
       'colorLegend',
       'Легенда цветов',
-      [],
-      input.colorLegend.map(formatColorLegendItem)
+      input.colorLegend.map((item) => ({ label: item.label, value: item.description }))
     )
   ] satisfies readonly TheoryOverlaySection[];
 
@@ -252,7 +267,7 @@ function isSectionHighlighted(
   }
 
   if (contextTarget === 'scale') {
-    return id === 'scaleFormula' || id === 'scaleNotes';
+    return id === 'scaleFormula' || id === 'scaleNotes' || id === 'scaleFingering';
   }
 
   if (contextTarget === 'chords') {
@@ -295,10 +310,38 @@ function formatKeySignatureNotes(keySignature: KeySignature): string {
   return keySignature.notes.length === 0 ? 'нет' : keySignature.notes.join(', ');
 }
 
-function formatChord(chord: DiatonicChord): string {
-  return `${chord.romanDegree}: ${chord.name} (${chord.notes
-    .map((note) => note.name)
-    .join(', ')})`;
+/** Ноты гаммы одинаковы для всех вариантов — выносим их одной строкой, дальше только пальцы. */
+function buildScaleFingeringRows(
+  fingerings: readonly ScaleFingering[]
+): readonly TheoryOverlayRow[] {
+  const ascending = fingerings.find((fingering) => fingering.direction === 'ascending');
+  const notesRow =
+    ascending === undefined
+      ? []
+      : [
+          {
+            label: 'Ноты',
+            value: ascending.steps.map((step) => step.scaleNote.name).join(' - ')
+          }
+        ];
+
+  return [
+    ...notesRow,
+    ...fingerings.map((fingering) => ({
+      label: `${formatScaleFingeringHand(fingering.hand)} ${formatScaleFingeringDirection(
+        fingering.direction
+      )}`,
+      value: fingering.patternLabel
+    }))
+  ];
+}
+
+function formatScaleFingeringHand(hand: ScaleFingeringHand): string {
+  return hand === 'right' ? 'Правая' : 'Левая';
+}
+
+function formatScaleFingeringDirection(direction: ScaleFingeringDirection): string {
+  return direction === 'ascending' ? 'вверх' : 'вниз';
 }
 
 function formatActiveChordSource(source: TheoryOverlayInput['activeChordSource']): string {
@@ -319,6 +362,24 @@ function formatRelativeRelationship(
   return relationship === 'relativeMinor' ? 'Параллельный минор' : 'Параллельный мажор';
 }
 
-function formatColorLegendItem(item: ColorLegendItem): string {
-  return `${item.label}: ${item.description}`;
+function getFingeringLabelByKeyId(input: {
+  readonly fingering: ScaleFingering | null;
+  readonly startOctave: number;
+  readonly octaveCount: number;
+}): ReadonlyMap<string, string> {
+  const labelByKeyId = new Map<string, string>();
+
+  if (input.fingering === null) {
+    return labelByKeyId;
+  }
+
+  const lowerTonicOctave = input.startOctave + (input.octaveCount > 2 ? 1 : 0);
+
+  for (const step of input.fingering.steps) {
+    const octave = lowerTonicOctave + step.octaveOffset;
+
+    labelByKeyId.set(`${step.scaleNote.physicalPitchClass}-${octave}`, String(step.finger));
+  }
+
+  return labelByKeyId;
 }

@@ -5,6 +5,7 @@ import { ColorLegend } from '../ui/hud/ColorLegend';
 import { LabelModeControl } from '../ui/hud/LabelModeControl';
 import { ProgressionHud } from '../ui/hud/ProgressionHud';
 import { RecommendedKeys } from '../ui/hud/RecommendedKeys';
+import { ScaleFingeringControl } from '../ui/hud/ScaleFingeringControl';
 import { ScaleStrip } from '../ui/hud/ScaleStrip';
 import { TopHud } from '../ui/hud/TopHud';
 import {
@@ -82,7 +83,7 @@ export function AppShell() {
   const progressionCards = selectActiveProgressionCards(store);
   const activeChordStatus = selectActiveChordStatus(store);
   const recommendedKeys = selectRecommendedKeys(store);
-  const colorLegend = selectColorLegend();
+  const colorLegend = selectColorLegend(store);
   const keyboardViewModel = selectKeyboardViewModel(store, viewport);
   const theoryOverlayModel = selectTheoryOverlayModel(store);
   const progressionPresets = getProgressionPresets(store.mode);
@@ -178,6 +179,12 @@ export function AppShell() {
           onToggleLabels={store.toggleLabelsVisible}
           chordLayerEnabled={store.chordLayerEnabled}
           onToggleChordLayer={store.toggleChordLayer}
+          scaleFingeringEnabled={store.scaleFingeringEnabled}
+          scaleFingeringHand={store.scaleFingeringHand}
+          scaleFingeringDirection={store.scaleFingeringDirection}
+          onToggleScaleFingering={store.toggleScaleFingering}
+          onSelectScaleFingeringHand={store.setScaleFingeringHand}
+          onSelectScaleFingeringDirection={store.setScaleFingeringDirection}
           focusMode={store.focusMode}
           onToggleFocus={store.toggleFocusMode}
           onOpenTheory={store.openTheoryOverlay}
@@ -325,6 +332,14 @@ export function AppShell() {
                         labelMode={store.labelMode}
                         onToggleLabels={store.toggleLabelsVisible}
                         onSelectLabelMode={store.setLabelMode}
+                      />
+                      <ScaleFingeringControl
+                        enabled={store.scaleFingeringEnabled}
+                        hand={store.scaleFingeringHand}
+                        direction={store.scaleFingeringDirection}
+                        onToggleEnabled={store.toggleScaleFingering}
+                        onSelectHand={store.setScaleFingeringHand}
+                        onSelectDirection={store.setScaleFingeringDirection}
                       />
                     </div>
                   </section>

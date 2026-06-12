@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import './primitives.css';
 import type { TheoryOverlayContextTarget, TheoryOverlayModel } from '../../music/types';
 
@@ -8,6 +9,19 @@ export interface TheoryOverlayProps {
 }
 
 export function TheoryOverlay({ model, onClose, className }: TheoryOverlayProps) {
+  const sectionsRef = useRef<HTMLDivElement>(null);
+
+  // Прокручиваем к секции, ради которой открыли справку, — она может быть внизу списка.
+  useEffect(() => {
+    if (!model.isOpen || model.contextTarget === null) {
+      return;
+    }
+
+    const highlighted = sectionsRef.current?.querySelector('[data-highlighted="true"]');
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    highlighted?.scrollIntoView({ block: 'start', behavior: reducedMotion ? 'auto' : 'smooth' });
+  }, [model.isOpen, model.contextTarget]);
+
   if (!model.isOpen) {
     return null;
   }
@@ -42,7 +56,7 @@ export function TheoryOverlay({ model, onClose, className }: TheoryOverlayProps)
         </button>
       </header>
 
-      <div className="primitive-theory-overlay__sections">
+      <div ref={sectionsRef} className="primitive-theory-overlay__sections">
         {model.sections.map((section) => (
           <section
             key={section.id}

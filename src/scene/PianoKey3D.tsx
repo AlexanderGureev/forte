@@ -72,7 +72,9 @@ export function PianoKey3D({
 
   const labelZ = length / 2 - (isWhite ? 0.62 : 0.46);
   const dotZ = isWhite ? length / 2 - 1.18 : 0.62;
+  const hasFingeringBadge = keyModel.fingeringLabel !== null;
   const markerZ = isWhite ? 0.95 : -0.05;
+  const fingeringBadge = getFingeringBadgeColors(chordEmphasis);
   const glowColor = isDiminished ? HIGHLIGHT_COLORS.diminished : HIGHLIGHT_COLORS.activeChord;
   const baseColor = isWhite ? SCENE_COLORS.whiteKey : SCENE_COLORS.blackKey;
   // Hover подмешивает янтарь в цвет клавиши: на белой слоновой кости
@@ -144,8 +146,9 @@ export function PianoKey3D({
         />
       </RoundedBox>
 
-      {/* Маркер ноты гаммы; тоника — золотая точка на темной подложке, чтобы не сливалась */}
-      {inScale ? (
+      {/* Маркер ноты гаммы; тоника — золотая точка на темной подложке, чтобы не сливалась.
+          Когда показана аппликатура, маркер заменяет бейдж с номером пальца. */}
+      {inScale && !hasFingeringBadge ? (
         <group position={[0, topY + 0.008, dotZ]} rotation={[-Math.PI / 2, 0, 0]}>
           {isTonic ? (
             <mesh position={[0, 0, -0.001]}>
@@ -197,6 +200,39 @@ export function PianoKey3D({
           {keyModel.visibleLabel}
         </Text>
       ) : null}
+
+      {keyModel.fingeringLabel !== null ? (
+        <group position={[0, topY + 0.016, dotZ]} rotation={[-Math.PI / 2, 0, 0]}>
+          {isTonic ? (
+            <mesh>
+              <ringGeometry args={[isWhite ? 0.21 : 0.18, isWhite ? 0.26 : 0.23, 32]} />
+              <meshBasicMaterial
+                color={HIGHLIGHT_COLORS.tonic}
+                toneMapped={false}
+                transparent
+                opacity={0.9}
+              />
+            </mesh>
+          ) : null}
+          <mesh>
+            <circleGeometry args={[isWhite ? 0.16 : 0.13, 32]} />
+            <meshBasicMaterial
+              color={fingeringBadge.background}
+              toneMapped={false}
+            />
+          </mesh>
+          <Text
+            position={[0, 0, 0.002]}
+            font={keyLabelFontUrl}
+            fontSize={isWhite ? 0.2 : 0.16}
+            color={fingeringBadge.digit}
+            anchorX="center"
+            anchorY="middle"
+          >
+            {keyModel.fingeringLabel}
+          </Text>
+        </group>
+      ) : null}
     </group>
   );
 }
@@ -208,4 +244,16 @@ function getLabelColor(isWhite: boolean, chordEmphasis: ChordKeyEmphasis | null)
   }
 
   return isWhite ? '#3f392d' : '#d9d2c2';
+}
+
+/** На золотой подсветке аккорда золотой бейдж сливается с клавишей — инвертируем цвета. */
+function getFingeringBadgeColors(chordEmphasis: ChordKeyEmphasis | null): {
+  background: string;
+  digit: string;
+} {
+  if (chordEmphasis === 'root' || chordEmphasis === 'primary') {
+    return { background: '#2a1708', digit: '#ffe9c2' };
+  }
+
+  return { background: '#e0aa5c', digit: '#241608' };
 }

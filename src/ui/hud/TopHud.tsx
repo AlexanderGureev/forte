@@ -2,11 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { SegmentedControl } from '../primitives';
 import { ColorLegend } from './ColorLegend';
 import { LabelModeControl } from './LabelModeControl';
+import { ScaleFingeringControl } from './ScaleFingeringControl';
 import type { ScaleSummary } from '../../state/selectors';
 import type {
   ColorLegendItem,
   LabelMode,
   Mode,
+  ScaleFingeringDirection,
+  ScaleFingeringHand,
   TheoryOverlayContextTarget
 } from '../../music/types';
 
@@ -20,6 +23,12 @@ export interface TopHudProps {
   readonly onToggleLabels: () => void;
   readonly chordLayerEnabled: boolean;
   readonly onToggleChordLayer: () => void;
+  readonly scaleFingeringEnabled: boolean;
+  readonly scaleFingeringHand: ScaleFingeringHand;
+  readonly scaleFingeringDirection: ScaleFingeringDirection;
+  readonly onToggleScaleFingering: () => void;
+  readonly onSelectScaleFingeringHand: (hand: ScaleFingeringHand) => void;
+  readonly onSelectScaleFingeringDirection: (direction: ScaleFingeringDirection) => void;
   readonly focusMode: boolean;
   readonly onToggleFocus: () => void;
   readonly onOpenTheory: (target: TheoryOverlayContextTarget) => void;
@@ -44,6 +53,12 @@ export function TopHud({
   onToggleLabels,
   chordLayerEnabled,
   onToggleChordLayer,
+  scaleFingeringEnabled,
+  scaleFingeringHand,
+  scaleFingeringDirection,
+  onToggleScaleFingering,
+  onSelectScaleFingeringHand,
+  onSelectScaleFingeringDirection,
   focusMode,
   onToggleFocus,
   onOpenTheory,
@@ -107,6 +122,12 @@ export function TopHud({
             <ViewMenu
               chordLayerEnabled={chordLayerEnabled}
               onToggleChordLayer={onToggleChordLayer}
+              scaleFingeringEnabled={scaleFingeringEnabled}
+              scaleFingeringHand={scaleFingeringHand}
+              scaleFingeringDirection={scaleFingeringDirection}
+              onToggleScaleFingering={onToggleScaleFingering}
+              onSelectScaleFingeringHand={onSelectScaleFingeringHand}
+              onSelectScaleFingeringDirection={onSelectScaleFingeringDirection}
               labelsVisible={labelsVisible}
               labelMode={labelMode}
               onToggleLabels={onToggleLabels}
@@ -140,6 +161,12 @@ export function TopHud({
 interface ViewMenuProps {
   readonly chordLayerEnabled: boolean;
   readonly onToggleChordLayer: () => void;
+  readonly scaleFingeringEnabled: boolean;
+  readonly scaleFingeringHand: ScaleFingeringHand;
+  readonly scaleFingeringDirection: ScaleFingeringDirection;
+  readonly onToggleScaleFingering: () => void;
+  readonly onSelectScaleFingeringHand: (hand: ScaleFingeringHand) => void;
+  readonly onSelectScaleFingeringDirection: (direction: ScaleFingeringDirection) => void;
   readonly labelsVisible: boolean;
   readonly labelMode: LabelMode;
   readonly onToggleLabels: () => void;
@@ -152,6 +179,12 @@ interface ViewMenuProps {
 function ViewMenu({
   chordLayerEnabled,
   onToggleChordLayer,
+  scaleFingeringEnabled,
+  scaleFingeringHand,
+  scaleFingeringDirection,
+  onToggleScaleFingering,
+  onSelectScaleFingeringHand,
+  onSelectScaleFingeringDirection,
   labelsVisible,
   labelMode,
   onToggleLabels,
@@ -224,6 +257,17 @@ function ViewMenu({
             >
               Только гамма
             </button>
+          </div>
+          <div className="hud-view-menu__row">
+            <span className="hud-view-menu__label">Аппликатура гаммы</span>
+            <ScaleFingeringControl
+              enabled={scaleFingeringEnabled}
+              hand={scaleFingeringHand}
+              direction={scaleFingeringDirection}
+              onToggleEnabled={onToggleScaleFingering}
+              onSelectHand={onSelectScaleFingeringHand}
+              onSelectDirection={onSelectScaleFingeringDirection}
+            />
           </div>
           <span className="hud-view-menu__divider" aria-hidden="true" />
           <ColorLegend items={colorLegend} onOpenTheory={onOpenTheory} />

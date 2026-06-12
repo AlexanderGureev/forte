@@ -318,50 +318,54 @@
 
 .primitive-theory-overlay__sections {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: 1fr;
   gap: 10px;
 }
 
 .primitive-theory-overlay__section {
-  border: 1px solid rgba(247, 244, 239, 0.12);
-  border-radius: 8px;
-  padding: 12px;
-  background: rgba(247, 244, 239, 0.045);
+  border-radius: 10px;
+  padding: 14px;
+  background: rgba(247, 244, 239, 0.04);
 }
 
 .primitive-theory-overlay__section--highlighted {
-  border-color: rgba(228, 179, 99, 0.78);
   background: rgba(228, 179, 99, 0.1);
 }
 
 .primitive-theory-overlay__section-title {
-  margin: 0 0 10px;
+  margin: 0 0 12px;
   color: #e4b363;
-  font-size: 0.92rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .primitive-theory-overlay__rows {
   display: grid;
-  gap: 6px;
+  gap: 8px;
   margin: 0;
 }
 
 .primitive-theory-overlay__row {
   display: grid;
-  grid-template-columns: 118px 1fr;
-  gap: 10px;
+  grid-template-columns: 150px 1fr;
+  gap: 12px;
   align-items: baseline;
 }
 
 .primitive-theory-overlay__row dt {
   color: #9aa5ad;
-  font-size: 0.84rem;
+  font-size: 0.8rem;
+  line-height: 1.3;
 }
 
 .primitive-theory-overlay__row dd {
   margin: 0;
   color: #f7f4ef;
-  font-weight: 700;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.35;
 }
 
 .primitive-theory-overlay__items {
@@ -370,6 +374,27 @@
   margin: 0;
   padding-left: 18px;
   color: #d8dde1;
+}
+
+/* Ноты гаммы — компактные чипы вместо вертикального списка */
+.primitive-theory-overlay__section[data-section-id='scaleNotes'] .primitive-theory-overlay__items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0;
+  list-style: none;
+}
+
+.primitive-theory-overlay__section[data-section-id='scaleNotes']
+  .primitive-theory-overlay__items
+  li {
+  padding: 4px 11px;
+  border: 1px solid rgba(247, 244, 239, 0.16);
+  border-radius: 999px;
+  background: rgba(247, 244, 239, 0.05);
+  color: #f7f4ef;
+  font-size: 0.84rem;
+  font-weight: 700;
 }
 
 .primitive-chord-card:focus-visible,

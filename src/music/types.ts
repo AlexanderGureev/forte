@@ -41,6 +41,25 @@ export type KeyboardViewport = 'desktop' | 'tablet' | 'mobile';
 
 export type DegreeLabel = '1' | '2' | '3' | '4' | '5' | '6' | '7' | 'b3' | 'b6' | 'b7';
 
+export type PianoFinger = 1 | 2 | 3 | 4 | 5;
+
+export type ScaleFingeringHand = 'right' | 'left';
+
+export type ScaleFingeringDirection = 'ascending' | 'descending';
+
+export type ScaleFingeringPattern = readonly [
+  PianoFinger,
+  PianoFinger,
+  PianoFinger,
+  PianoFinger,
+  PianoFinger,
+  PianoFinger,
+  PianoFinger,
+  PianoFinger
+];
+
+export type ScaleFingeringOctaveOffset = 0 | 1;
+
 export type KeyboardHighlightLayer = 'inScale' | 'tonic' | 'activeChord' | 'diminished';
 
 export type TheoryOverlayContextTarget =
@@ -56,6 +75,7 @@ export type TheoryOverlaySectionId =
   | 'key'
   | 'scaleFormula'
   | 'scaleNotes'
+  | 'scaleFingering'
   | 'keySignature'
   | 'diatonicChords'
   | 'activeChord'
@@ -128,6 +148,21 @@ export interface Scale {
   readonly notes: readonly ScaleNote[];
 }
 
+export interface ScaleFingeringStep {
+  readonly stepIndex: number;
+  readonly scaleNote: ScaleNote;
+  readonly finger: PianoFinger;
+  readonly octaveOffset: ScaleFingeringOctaveOffset;
+}
+
+export interface ScaleFingering {
+  readonly key: KeyDefinition;
+  readonly hand: ScaleFingeringHand;
+  readonly direction: ScaleFingeringDirection;
+  readonly steps: readonly ScaleFingeringStep[];
+  readonly patternLabel: string;
+}
+
 export interface ChordFormula {
   readonly quality: ChordQuality;
   readonly labels: readonly ChordFormulaLabel[];
@@ -181,6 +216,7 @@ export interface KeyboardViewModelInput {
   readonly scale: Scale;
   readonly activeChord: DiatonicChord | null;
   readonly chordLayerEnabled: boolean;
+  readonly scaleFingering: ScaleFingering | null;
   readonly labelMode: LabelMode;
   readonly labelsVisible: boolean;
   readonly viewport: KeyboardViewport;
@@ -197,6 +233,7 @@ export interface KeyboardKeyViewModel {
   readonly noteLabel: NoteName | null;
   readonly degreeLabel: DegreeLabel | null;
   readonly visibleLabel: string | null;
+  readonly fingeringLabel: string | null;
   readonly highlightLayers: readonly KeyboardHighlightLayer[];
 }
 
@@ -208,7 +245,7 @@ export interface KeyboardViewModel {
 }
 
 export interface ColorLegendItem {
-  readonly id: KeyboardHighlightLayer;
+  readonly id: KeyboardHighlightLayer | 'chordRoot' | 'fingering' | 'fingeringOnChord';
   readonly label: string;
   readonly description: string;
 }
@@ -224,6 +261,7 @@ export interface TheoryOverlayInput {
   readonly activeProgressionStepIndex: number | null;
   readonly progression: MaterializedProgression;
   readonly colorLegend: readonly ColorLegendItem[];
+  readonly scaleFingerings: readonly ScaleFingering[];
 }
 
 export interface TheoryOverlayRow {

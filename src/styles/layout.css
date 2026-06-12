@@ -191,6 +191,14 @@
   margin: 0 4px;
 }
 
+.hud-scale-stack {
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+  max-width: min(100%, calc(100vw - 20px));
+  pointer-events: auto;
+}
+
 /* Нижняя полоса гаммы: по центру экрана, под клавиатурой */
 .hud-bottom {
   display: flex;
@@ -234,6 +242,42 @@
   font-weight: 700;
 }
 
+.hud-scale-chip__meta {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  min-height: 13px;
+}
+
+.hud-scale-chip__finger {
+  display: inline-grid;
+  min-width: 15px;
+  height: 15px;
+  place-items: center;
+  border: 1px solid rgba(224, 170, 92, 0.52);
+  border-radius: 999px;
+  color: #211307;
+  font-size: 0.58rem;
+  font-weight: 900;
+  line-height: 1;
+  background: var(--gold);
+}
+
+.hud-scale-fingering-hint {
+  margin: 0;
+  max-width: min(72vw, 640px);
+  overflow: hidden;
+  color: var(--ink-dim);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.45);
+}
+
 .hud-top__controls {
   display: flex;
   grid-area: controls;
@@ -256,7 +300,9 @@
   display: grid;
   gap: 14px;
   width: 296px;
+  max-height: calc(100vh - 120px);
   padding: 14px;
+  overflow-y: auto;
   background: var(--panel-solid);
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
 }
@@ -285,6 +331,19 @@
 
 .hud-view-menu .hud-legend .hud-panel__header {
   margin-bottom: 8px;
+}
+
+.hud-fingering-control {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+.hud-fingering-control__segments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
 }
 
 /* Сегменты в шапке и шите: лейбл скрыт визуально, контролы на одной оси */
@@ -525,20 +584,59 @@
 }
 
 .hud-legend__swatch[data-kind='tonic'] {
-  border: 3px solid #ffc14f;
+  padding: 2px;
+  border: 2px solid #ffc14f;
+  border-radius: 50%;
+  background: #ffc14f content-box;
+}
+
+.hud-legend__swatch[data-kind='activeChord'] {
+  width: 10px;
+  height: 16px;
+  margin: 0 2px;
+  border-radius: 2px 2px 3px 3px;
+  background: linear-gradient(180deg, #fbe3b4, #fdc878);
+  box-shadow: 0 0 7px rgba(253, 200, 120, 0.45);
+}
+
+.hud-legend__swatch[data-kind='chordRoot'] {
+  border: 3px solid #fff1da;
   border-radius: 50%;
   background: transparent;
 }
 
-.hud-legend__swatch[data-kind='activeChord'] {
-  border-radius: 4px;
-  background: #ffb13c;
-  box-shadow: 0 0 7px rgba(255, 177, 60, 0.55);
+.hud-legend__swatch[data-kind='fingering'],
+.hud-legend__swatch[data-kind='fingeringOnChord'] {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.hud-legend__swatch[data-kind='fingering']::after,
+.hud-legend__swatch[data-kind='fingeringOnChord']::after {
+  content: '1';
+}
+
+.hud-legend__swatch[data-kind='fingering'] {
+  color: #241608;
+  background: #e0aa5c;
+}
+
+.hud-legend__swatch[data-kind='fingeringOnChord'] {
+  border: 1px solid rgba(255, 233, 194, 0.4);
+  color: #ffe9c2;
+  background: #2a1708;
 }
 
 .hud-legend__swatch[data-kind='diminished'] {
-  border-radius: 4px;
-  background: #e25c4a;
+  width: 10px;
+  height: 16px;
+  margin: 0 2px;
+  border-radius: 2px 2px 3px 3px;
+  background: linear-gradient(180deg, #f2b3a4, #e9826e);
 }
 
 .hud-legend__label {
@@ -861,6 +959,18 @@
     padding: 0 13px;
     font-size: 0.8rem;
   }
+
+  .hud-scale-strip[data-fingering='true'] {
+    flex-wrap: wrap;
+    justify-content: center;
+    border-radius: 16px;
+  }
+
+  .hud-scale-fingering-hint {
+    max-width: calc(100vw - 32px);
+    text-align: center;
+    white-space: normal;
+  }
 }
 
 /* ---------- Слои поверх сцены ---------- */
@@ -1004,7 +1114,7 @@
 
 .theory-layer .theory-panel.primitive-theory-overlay {
   position: relative;
-  width: min(400px, 100%);
+  width: min(560px, 100%);
   height: 100%;
   max-height: none;
   border-width: 0 0 0 1px;
