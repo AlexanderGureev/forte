@@ -339,7 +339,7 @@
   white-space: nowrap;
 }
 
-.hud-score-staff__label[data-highlighted='true'] {
+.hud-score-staff__label[data-highlight-priority='activeChord'] {
   color: var(--gold);
 }
 
@@ -352,8 +352,23 @@
   font-size: 0.56rem;
 }
 
-.hud-score-staff__label[data-highlighted='true'] .hud-score-staff__label-meta {
+.hud-score-staff__label[data-highlight-priority='activeChord'] .hud-score-staff__label-meta {
   color: #fbe3b4;
+}
+
+.hud-score-staff__label[data-midi-pressed='true'] {
+  color: #80edff;
+  text-shadow: 0 0 9px rgba(75, 220, 255, 0.42), 0 1px 7px rgba(0, 0, 0, 0.55);
+}
+
+.hud-score-staff__label[data-midi-pressed='true'] .hud-score-staff__label-meta {
+  color: #c8f8ff;
+}
+
+.hud-score-staff__label[data-midi-pressed='true'] .hud-score-staff__label-finger {
+  border-color: rgba(128, 237, 255, 0.56);
+  color: #e6fbff;
+  background: #123948;
 }
 
 .hud-score-staff__label-finger {
@@ -427,6 +442,102 @@
 
 .hud-view-menu .hud-legend .hud-panel__header {
   margin-bottom: 8px;
+}
+
+.hud-midi-menu {
+  position: relative;
+}
+
+.hud-midi-menu__popover {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 30;
+  width: min(320px, calc(100vw - 24px));
+  padding: 14px;
+  background: var(--panel-solid);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+
+.midi-panel {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.midi-panel__header {
+  display: grid;
+  gap: 5px;
+}
+
+.midi-panel__status,
+.midi-panel__selected {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.midi-panel[data-status='connected'] .midi-panel__status {
+  color: #80edff;
+}
+
+.midi-panel__selected {
+  color: var(--ink-dim);
+  font-size: 0.78rem;
+}
+
+.midi-panel__inputs {
+  display: grid;
+  gap: 7px;
+}
+
+.midi-panel__input {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  padding: 9px 11px;
+  color: var(--ink);
+  text-align: left;
+  background: rgba(244, 238, 226, 0.05);
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.midi-panel__input:hover {
+  border-color: rgba(89, 200, 255, 0.56);
+}
+
+.midi-panel__input[aria-checked='true'] {
+  border-color: rgba(89, 200, 255, 0.72);
+  background: rgba(89, 200, 255, 0.13);
+}
+
+.midi-panel__input-name {
+  overflow: hidden;
+  font-size: 0.86rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.midi-panel__input-meta {
+  overflow: hidden;
+  color: var(--ink-faint);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.midi-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
 }
 
 .hud-fingering-control {
@@ -565,6 +676,7 @@
 .hud-action:focus-visible,
 .hud-info-button:focus-visible,
 .hud-preset:focus-visible,
+.midi-panel__input:focus-visible,
 .dialog__option:focus-visible,
 .layer-backdrop:focus-visible {
   outline: 2px solid var(--cyan);
@@ -698,6 +810,15 @@
   border-radius: 2px 2px 3px 3px;
   background: linear-gradient(180deg, #fbe3b4, #fdc878);
   box-shadow: 0 0 7px rgba(253, 200, 120, 0.45);
+}
+
+.hud-legend__swatch[data-kind='midiPressed'] {
+  width: 10px;
+  height: 16px;
+  margin: 0 2px;
+  border-radius: 2px 2px 3px 3px;
+  background: linear-gradient(180deg, #d7fbff, #4bdcff 58%, #16819a);
+  box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.36), 0 0 8px rgba(75, 220, 255, 0.52);
 }
 
 .hud-legend__swatch[data-kind='chordRoot'] {

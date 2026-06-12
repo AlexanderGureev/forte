@@ -3,6 +3,7 @@ import { Formatter, Renderer, Stave, StaveConnector, StaveNote, Voice } from 've
 import type {
   ScoreStaffViewModel,
   StaffClef,
+  StaffHighlightLayer,
   StaffLineViewModel,
   StaffNoteViewModel,
   TheoryOverlayContextTarget
@@ -50,6 +51,10 @@ const ACTIVE_CHORD_STYLE = {
   fillStyle: '#fdc878',
   strokeStyle: '#fdc878'
 };
+const MIDI_PRESSED_STYLE = {
+  fillStyle: '#6ee8ff',
+  strokeStyle: '#6ee8ff'
+};
 const INVISIBLE_STYLE = {
   fillStyle: 'transparent',
   strokeStyle: 'transparent'
@@ -61,7 +66,7 @@ interface StaffLabel {
   readonly slotIndex: number;
   readonly noteName: StaffNoteViewModel['noteName'];
   readonly degreeLabel: StaffNoteViewModel['degreeLabel'];
-  readonly highlighted: boolean;
+  readonly highlightLayers: readonly StaffHighlightLayer[];
   readonly finger: StaffNoteViewModel['finger'];
   readonly x: number;
 }
@@ -135,30 +140,37 @@ export function ScoreStaff({ model, onOpenTheory, className }: ScoreStaffProps) 
         >
           <div className="hud-score-staff__renderer" ref={rendererRef} aria-hidden="true" />
           <div className="hud-score-staff__labels" aria-hidden="true">
-            {labels.map((label) => (
-              <span
-                key={label.id}
-                className="hud-score-staff__label"
-                data-clef={label.clef}
-                data-slot-index={label.slotIndex}
-                data-note-name={label.noteName}
-                data-degree-label={label.degreeLabel}
-                data-highlighted={label.highlighted ? 'true' : 'false'}
-                data-finger={label.finger === null ? 'none' : label.finger}
-                style={{
-                  left: label.x,
-                  top: label.clef === 'treble' ? layout.trebleLabelY : layout.bassLabelY
-                }}
-              >
-                <span className="hud-score-staff__label-note">{label.noteName}</span>
-                <span className="hud-score-staff__label-meta">
-                  <span className="hud-score-staff__label-degree">{label.degreeLabel}</span>
-                  {label.finger === null ? null : (
-                    <span className="hud-score-staff__label-finger">{label.finger}</span>
-                  )}
+            {labels.map((label) => {
+              const midiPressed = label.highlightLayers.includes('midiPressed');
+              const highlightPriority = getStaffHighlightPriority(label.highlightLayers);
+
+              return (
+                <span
+                  key={label.id}
+                  className="hud-score-staff__label"
+                  data-clef={label.clef}
+                  data-slot-index={label.slotIndex}
+                  data-note-name={label.noteName}
+                  data-degree-label={label.degreeLabel}
+                  data-highlight-layers={formatHighlightLayers(label.highlightLayers)}
+                  data-highlight-priority={highlightPriority}
+                  data-midi-pressed={midiPressed ? 'true' : 'false'}
+                  data-finger={label.finger === null ? 'none' : label.finger}
+                  style={{
+                    left: label.x,
+                    top: label.clef === 'treble' ? layout.trebleLabelY : layout.bassLabelY
+                  }}
+                >
+                  <span className="hud-score-staff__label-note">{label.noteName}</span>
+                  <span className="hud-score-staff__label-meta">
+                    <span className="hud-score-staff__label-degree">{label.degreeLabel}</span>
+                    {label.finger === null ? null : (
+                      <span className="hud-score-staff__label-finger">{label.finger}</span>
+                    )}
+                  </span>
                 </span>
-              </span>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
@@ -304,7 +316,7 @@ function renderVexFlowScore(
         slotIndex: entry.modelNote.slotIndex,
         noteName: entry.modelNote.noteName,
         degreeLabel: entry.modelNote.degreeLabel,
-        highlighted: entry.modelNote.highlighted,
+        highlightLayers: entry.modelNote.highlightLayers,
         finger: entry.modelNote.finger,
         x: entry.staveNote.getAbsoluteX() + NOTE_HEAD_CENTER_OFFSET
       }
@@ -355,11 +367,41 @@ function createVexFlowNote(note: StaffNoteViewModel): StaveNote {
     clef: note.clef,
     autoStem: true
   });
-  const style = note.highlighted ? ACTIVE_CHORD_STYLE : SCORE_INK_STYLE;
+  const style = getStaffNoteStyle(note.highlightLayers);
 
   staveNote.setStyle(style).setKeyStyle(0, style).setStemStyle(style);
 
   return staveNote;
+}
+
+function getStaffNoteStyle(highlightLayers: readonly StaffHighlightLayer[]) {
+  if (highlightLayers.includes('midiPressed')) {
+    return MIDI_PRESSED_STYLE;
+  }
+
+  if (highlightLayers.includes('activeChord')) {
+    return ACTIVE_CHORD_STYLE;
+  }
+
+  return SCORE_INK_STYLE;
+}
+
+function getStaffHighlightPriority(
+  highlightLayers: readonly StaffHighlightLayer[]
+): StaffHighlightLayer | 'none' {
+  if (highlightLayers.includes('midiPressed')) {
+    return 'midiPressed';
+  }
+
+  if (highlightLayers.includes('activeChord')) {
+    return 'activeChord';
+  }
+
+  return 'none';
+}
+
+function formatHighlightLayers(highlightLayers: readonly StaffHighlightLayer[]): string {
+  return highlightLayers.length === 0 ? 'none' : highlightLayers.join(' ');
 }
 
 function createInvisibleRest(clef: StaffClef): StaveNote {

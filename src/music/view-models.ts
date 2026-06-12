@@ -11,6 +11,7 @@ import type {
   KeyDefinition,
   KeySignature,
   LabelMode,
+  MidiPressedNote,
   Mode,
   PianoFinger,
   PhysicalPitchClass,
@@ -21,6 +22,7 @@ import type {
   ScaleFingeringHand,
   ScaleNote,
   ScoreStaffViewModel,
+  StaffHighlightLayer,
   TheoryOverlayContextTarget,
   TheoryOverlayInput,
   TheoryOverlayModel,
@@ -74,6 +76,7 @@ export function createKeyboardViewModel(input: KeyboardViewModelInput): Keyboard
     activeChord: input.activeChord,
     chordLayerEnabled: input.chordLayerEnabled
   });
+  const activeMidiPitchIds = createActiveMidiPitchIds(input.activeMidiNotes);
   const fingeringLabelByKeyId = getFingeringLabelByKeyId({
     fingering: input.scaleFingering,
     startOctave,
@@ -91,7 +94,8 @@ export function createKeyboardViewModel(input: KeyboardViewModelInput): Keyboard
       key: input.key,
       physicalPitchClass,
       scaleNote,
-      activeChordHighlight
+      activeChordHighlight,
+      midiPressed: activeMidiPitchIds.has(getPitchIdentityId({ physicalPitchClass, octave }))
     });
 
     return {
@@ -128,6 +132,7 @@ export function createScoreStaffViewModel(input: {
   readonly scale: Scale;
   readonly keyboard: KeyboardViewModel;
   readonly activeChord: DiatonicChord | null;
+  readonly activeMidiNotes: readonly MidiPressedNote[];
   readonly chordLayerEnabled: boolean;
   readonly scaleFingeringEnabled: boolean;
 }): ScoreStaffViewModel {
@@ -223,6 +228,7 @@ function getKeyboardHighlightLayers(input: {
   readonly physicalPitchClass: PhysicalPitchClass;
   readonly scaleNote: ScaleNote | null;
   readonly activeChordHighlight: ActiveChordHighlight;
+  readonly midiPressed: boolean;
 }): readonly KeyboardHighlightLayer[] {
   const highlightLayers: KeyboardHighlightLayer[] = [];
 
@@ -242,6 +248,10 @@ function getKeyboardHighlightLayers(input: {
     }
   }
 
+  if (input.midiPressed) {
+    highlightLayers.push('midiPressed');
+  }
+
   return highlightLayers;
 }
 
@@ -250,24 +260,34 @@ function createStaffImprovisationViewModel(input: {
   readonly key: KeyDefinition;
   readonly keyboard: KeyboardViewModel;
   readonly activeChord: DiatonicChord | null;
+  readonly activeMidiNotes: readonly MidiPressedNote[];
   readonly chordLayerEnabled: boolean;
 }): ScoreStaffViewModel {
   const activeChordHighlight = createActiveChordHighlight({
     activeChord: input.activeChord,
     chordLayerEnabled: input.chordLayerEnabled
   });
-  const notes = input.keyboard.keys.filter(hasScaleNote).map((key, slotIndex) =>
-    createStaffNote({
+  const activeMidiPitchIds = createActiveMidiPitchIds(input.activeMidiNotes);
+  const notes = input.keyboard.keys.filter(hasScaleNote).map((key, slotIndex) => {
+    const activeChordHighlighted = isActiveChordHighlighted(
+      activeChordHighlight,
+      key.scaleNote.physicalPitchClass
+    );
+
+    return createStaffNote({
       mode: input.mode,
       key: input.key,
       scaleNote: key.scaleNote,
       octave: key.octave,
       clef: getClefForPhysicalPitch(key.physicalPitchClass, key.octave),
       slotIndex,
-      highlighted: isActiveChordHighlighted(activeChordHighlight, key.scaleNote.physicalPitchClass),
+      highlightLayers: getStaffHighlightLayers({
+        activeChordHighlighted,
+        midiPressed: activeMidiPitchIds.has(key.id)
+      }),
       finger: null
-    })
-  );
+    });
+  });
 
   return {
     mode: input.mode,
@@ -290,9 +310,11 @@ function createStaffImprovisationViewModel(input: {
 function createStaffPracticeViewModel(input: {
   readonly key: KeyDefinition;
   readonly scale: Scale;
+  readonly activeMidiNotes: readonly MidiPressedNote[];
   readonly scaleFingeringEnabled: boolean;
 }): ScoreStaffViewModel {
   const anchorOctave = getNearestTonicOctave(input.key.physicalPitchClass);
+  const activeMidiPitchIds = createActiveMidiPitchIds(input.activeMidiNotes);
   const rightAscending = input.scaleFingeringEnabled
     ? buildScaleFingering({
         key: input.key,
@@ -324,6 +346,7 @@ function createStaffPracticeViewModel(input: {
           clef: 'treble',
           anchorOctave,
           direction: 'ascending',
+          activeMidiPitchIds,
           fingering: rightAscending
         })
       },
@@ -335,6 +358,7 @@ function createStaffPracticeViewModel(input: {
           clef: 'bass',
           anchorOctave,
           direction: 'descending',
+          activeMidiPitchIds,
           fingering: leftDescending
         })
       }
@@ -354,6 +378,7 @@ function createPracticeNotes(input: {
   readonly clef: ScoreStaffViewModel['lines'][number]['clef'];
   readonly anchorOctave: number;
   readonly direction: ScaleFingeringDirection;
+  readonly activeMidiPitchIds: ReadonlySet<string>;
   readonly fingering: ScaleFingering | null;
 }): readonly ScoreStaffViewModel['lines'][number]['notes'][number][] {
   const ascendingPitches = createAscendingPracticePitches({
@@ -372,7 +397,15 @@ function createPracticeNotes(input: {
       octave: pitch.octave,
       clef: input.clef,
       slotIndex,
-      highlighted: false,
+      highlightLayers: getStaffHighlightLayers({
+        activeChordHighlighted: false,
+        midiPressed: input.activeMidiPitchIds.has(
+          getPitchIdentityId({
+            physicalPitchClass: pitch.scaleNote.physicalPitchClass,
+            octave: pitch.octave
+          })
+        )
+      }),
       finger: getPracticeFinger(input.fingering, slotIndex)
     })
   );
@@ -408,7 +441,7 @@ function createStaffNote(input: {
   readonly octave: number;
   readonly clef: ScoreStaffViewModel['lines'][number]['clef'];
   readonly slotIndex: number;
-  readonly highlighted: boolean;
+  readonly highlightLayers: readonly StaffHighlightLayer[];
   readonly finger: PianoFinger | null;
 }): ScoreStaffViewModel['lines'][number]['notes'][number] {
   return {
@@ -420,7 +453,7 @@ function createStaffNote(input: {
     octave: input.octave,
     clef: input.clef,
     slotIndex: input.slotIndex,
-    highlighted: input.highlighted,
+    highlightLayers: input.highlightLayers,
     finger: input.finger
   };
 }
@@ -482,6 +515,34 @@ function isActiveChordHighlighted(
     activeChordHighlight.chord !== null &&
     activeChordHighlight.pitchClasses.has(physicalPitchClass)
   );
+}
+
+function createActiveMidiPitchIds(activeMidiNotes: readonly MidiPressedNote[]): ReadonlySet<string> {
+  return new Set(activeMidiNotes.map(getPitchIdentityId));
+}
+
+function getPitchIdentityId(input: {
+  readonly physicalPitchClass: PhysicalPitchClass;
+  readonly octave: number;
+}): string {
+  return `${input.physicalPitchClass}-${input.octave}`;
+}
+
+function getStaffHighlightLayers(input: {
+  readonly activeChordHighlighted: boolean;
+  readonly midiPressed: boolean;
+}): readonly StaffHighlightLayer[] {
+  const highlightLayers: StaffHighlightLayer[] = [];
+
+  if (input.activeChordHighlighted) {
+    highlightLayers.push('activeChord');
+  }
+
+  if (input.midiPressed) {
+    highlightLayers.push('midiPressed');
+  }
+
+  return highlightLayers;
 }
 
 function getVisibleKeyLabel(input: {

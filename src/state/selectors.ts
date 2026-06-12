@@ -108,6 +108,11 @@ const COLOR_LEGEND_ITEMS = [
     description: 'ноты текущего аккорда поверх слоя гаммы'
   },
   {
+    id: 'midiPressed',
+    label: 'Нажато на MIDI',
+    description: 'физически нажатая клавиша подключенной MIDI-клавиатуры'
+  },
+  {
     id: 'chordRoot',
     label: 'Начало аккорда',
     description: 'белое кольцо — нота, с которой начинать активный аккорд'
@@ -255,6 +260,7 @@ export function selectKeyboardViewModel(
     key,
     scale,
     activeChord: activeChordStatus.chord,
+    activeMidiNotes: state.midi.activeNotes,
     chordLayerEnabled: state.chordLayerEnabled,
     scaleFingering: selectScaleFingeringForScale(state, key, scale),
     labelMode: state.labelMode,
@@ -281,6 +287,7 @@ export function selectScoreStaffViewModel(
     scale,
     keyboard: selectKeyboardViewModel(state, viewport),
     activeChord: activeChordStatus.chord,
+    activeMidiNotes: state.midi.activeNotes,
     chordLayerEnabled: state.chordLayerEnabled,
     scaleFingeringEnabled: state.scaleFingeringEnabled
   });

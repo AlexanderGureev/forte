@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { SegmentedControl } from '../primitives';
 import { ColorLegend } from './ColorLegend';
 import { LabelModeControl } from './LabelModeControl';
+import { MidiPanel, type MidiPanelProps } from './MidiPanel';
 import { ScaleFingeringControl } from './ScaleFingeringControl';
 import type { ScaleSummary } from '../../state/selectors';
 import type {
@@ -111,6 +112,7 @@ export interface HudActionsProps {
   readonly labelMode: LabelMode;
   readonly onToggleLabels: () => void;
   readonly onSelectLabelMode: (labelMode: LabelMode) => void;
+  readonly midiPanel: MidiPanelProps;
   readonly colorLegend: readonly ColorLegendItem[];
   readonly onOpenTheory: (target: TheoryOverlayContextTarget) => void;
   readonly focusMode: boolean;
@@ -134,6 +136,7 @@ export function HudActions({
   labelMode,
   onToggleLabels,
   onSelectLabelMode,
+  midiPanel,
   colorLegend,
   onOpenTheory,
   focusMode,
@@ -161,6 +164,7 @@ export function HudActions({
           onOpenTheory={onOpenTheory}
         />
       ) : null}
+      <MidiMenu {...midiPanel} />
       <button
         className="hud-action"
         type="button"
@@ -170,6 +174,60 @@ export function HudActions({
       >
         Фокус
       </button>
+    </div>
+  );
+}
+
+function MidiMenu(props: MidiPanelProps) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (
+        containerRef.current !== null &&
+        event.target instanceof Node &&
+        !containerRef.current.contains(event.target)
+      ) {
+        setOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setOpen(false);
+      }
+    };
+
+    window.addEventListener('pointerdown', handlePointerDown);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('pointerdown', handlePointerDown);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <div className="hud-midi-menu" ref={containerRef}>
+      <button
+        className="hud-action"
+        type="button"
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        data-active={open ? 'true' : 'false'}
+        onClick={() => setOpen((value) => !value)}
+      >
+        MIDI
+      </button>
+      {open ? (
+        <div className="hud-midi-menu__popover hud-panel" role="dialog" aria-label="MIDI">
+          <MidiPanel {...props} />
+        </div>
+      ) : null}
     </div>
   );
 }

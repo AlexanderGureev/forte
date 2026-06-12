@@ -1,10 +1,14 @@
 import { create } from 'zustand';
 import { getEnharmonicOptionsForPitchClass, getSupportedKeys, resolveKey } from '../music/keys';
+import { assertMidiNoteNumber, createMidiPressedNote } from '../music/midi-notes';
 import { getProgressionPresets } from '../music/progressions';
+import type { MidiConnectionStatus, MidiInputDevice } from '../midi/types';
 import type {
   KeyDefinition,
   KeySelection,
   LabelMode,
+  MidiNoteNumber,
+  MidiPressedNote,
   Mode,
   ProgressionId,
   ProgressionPreset,
@@ -18,6 +22,14 @@ import type {
 export interface TheoryOverlayState {
   readonly isOpen: boolean;
   readonly contextTarget: TheoryOverlayContextTarget | null;
+}
+
+export interface MidiRuntimeState {
+  readonly status: MidiConnectionStatus;
+  readonly inputs: readonly MidiInputDevice[];
+  readonly selectedInputId: string | null;
+  readonly activeNotes: readonly MidiPressedNote[];
+  readonly errorMessage: string | null;
 }
 
 export interface AppState {
@@ -35,6 +47,7 @@ export interface AppState {
   readonly labelsVisible: boolean;
   readonly focusMode: boolean;
   readonly theoryOverlay: TheoryOverlayState;
+  readonly midi: MidiRuntimeState;
 }
 
 export interface AppActions {
@@ -57,6 +70,22 @@ export interface AppActions {
   readonly toggleFocusMode: () => void;
   readonly openTheoryOverlay: (contextTarget: TheoryOverlayContextTarget) => void;
   readonly closeTheoryOverlay: () => void;
+  readonly setMidiRequesting: () => void;
+  readonly setMidiReady: (inputs: readonly MidiInputDevice[]) => void;
+  readonly setMidiConnected: (inputId: string, inputs: readonly MidiInputDevice[]) => void;
+  readonly setMidiNoInputs: () => void;
+  readonly setMidiUnsupported: (message: string) => void;
+  readonly setMidiPermissionDenied: (message: string) => void;
+  readonly setMidiDisconnected: (
+    message: string,
+    inputs: readonly MidiInputDevice[]
+  ) => void;
+  readonly setMidiError: (message: string) => void;
+  readonly setMidiInputs: (inputs: readonly MidiInputDevice[]) => void;
+  readonly disconnectMidiInput: () => void;
+  readonly pressMidiNote: (note: MidiPressedNote) => void;
+  readonly releaseMidiNote: (midiNoteNumber: MidiNoteNumber) => void;
+  readonly clearMidiNotes: () => void;
 }
 
 export type AppStore = AppState & AppActions;
@@ -106,7 +135,8 @@ export function createInitialAppState(): AppState {
     theoryOverlay: {
       isOpen: false,
       contextTarget: null
-    }
+    },
+    midi: createInitialMidiState()
   };
 }
 
@@ -269,8 +299,183 @@ export const useAppStore = create<AppStore>()((set) => ({
         contextTarget: null
       }
     });
+  },
+
+  setMidiRequesting: () => {
+    set((state) => ({
+      midi: {
+        ...state.midi,
+        status: 'requesting',
+        selectedInputId: null,
+        activeNotes: [],
+        errorMessage: null
+      }
+    }));
+  },
+
+  setMidiReady: (inputs) => {
+    set({
+      midi: {
+        status: 'ready',
+        inputs: [...inputs],
+        selectedInputId: null,
+        activeNotes: [],
+        errorMessage: null
+      }
+    });
+  },
+
+  setMidiConnected: (inputId, inputs) => {
+    set((state) => ({
+      midi: {
+        status: 'connected',
+        inputs: [...inputs],
+        selectedInputId: inputId,
+        activeNotes:
+          state.midi.status === 'connected' && state.midi.selectedInputId === inputId
+            ? state.midi.activeNotes
+            : [],
+        errorMessage: null
+      }
+    }));
+  },
+
+  setMidiNoInputs: () => {
+    set({
+      midi: {
+        status: 'noInputs',
+        inputs: [],
+        selectedInputId: null,
+        activeNotes: [],
+        errorMessage: null
+      }
+    });
+  },
+
+  setMidiUnsupported: (message) => {
+    set({
+      midi: {
+        status: 'unsupported',
+        inputs: [],
+        selectedInputId: null,
+        activeNotes: [],
+        errorMessage: message
+      }
+    });
+  },
+
+  setMidiPermissionDenied: (message) => {
+    set({
+      midi: {
+        status: 'permissionDenied',
+        inputs: [],
+        selectedInputId: null,
+        activeNotes: [],
+        errorMessage: message
+      }
+    });
+  },
+
+  setMidiDisconnected: (message, inputs) => {
+    set({
+      midi: {
+        status: 'disconnected',
+        inputs: [...inputs],
+        selectedInputId: null,
+        activeNotes: [],
+        errorMessage: message
+      }
+    });
+  },
+
+  setMidiError: (message) => {
+    set((state) => ({
+      midi: {
+        ...state.midi,
+        status: 'error',
+        selectedInputId: null,
+        activeNotes: [],
+        errorMessage: message
+      }
+    }));
+  },
+
+  setMidiInputs: (inputs) => {
+    set((state) => ({
+      midi: {
+        ...state.midi,
+        inputs: [...inputs]
+      }
+    }));
+  },
+
+  disconnectMidiInput: () => {
+    set((state) => ({
+      midi: {
+        ...state.midi,
+        status: state.midi.inputs.length > 0 ? 'ready' : 'noInputs',
+        selectedInputId: null,
+        activeNotes: [],
+        errorMessage: null
+      }
+    }));
+  },
+
+  pressMidiNote: (note) => {
+    const pressedNote = createMidiPressedNote(note);
+
+    set((state) => {
+      const activeNoteIndex = state.midi.activeNotes.findIndex(
+        (activeNote) => activeNote.midiNoteNumber === pressedNote.midiNoteNumber
+      );
+      const activeNotes =
+        activeNoteIndex === -1
+          ? [...state.midi.activeNotes, pressedNote]
+          : state.midi.activeNotes.map((activeNote, index) =>
+              index === activeNoteIndex ? pressedNote : activeNote
+            );
+
+      return {
+        midi: {
+          ...state.midi,
+          activeNotes
+        }
+      };
+    });
+  },
+
+  releaseMidiNote: (midiNoteNumber) => {
+    assertMidiNoteNumber(midiNoteNumber);
+
+    set((state) => ({
+      midi: {
+        ...state.midi,
+        activeNotes: state.midi.activeNotes.filter(
+          (activeNote) => activeNote.midiNoteNumber !== midiNoteNumber
+        )
+      }
+    }));
+  },
+
+  clearMidiNotes: () => {
+    set((state) => ({
+      midi: {
+        ...state.midi,
+        activeNotes: []
+      }
+    }));
   }
 }));
+
+function createInitialMidiState(): MidiRuntimeState {
+  return {
+    status: 'idle',
+    inputs: [],
+    selectedInputId: null,
+    activeNotes: [],
+    errorMessage: null
+  };
+}
 
 function getDefaultProgressionId(mode: Mode): ProgressionId {
   return getProgressionPresets(mode)[0].id;

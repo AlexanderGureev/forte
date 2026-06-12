@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createInitialAppState, useAppStore } from '../app-state';
+import { createMidiPressedNote } from '../../music/midi-notes';
 import {
   selectActiveChordStatus,
   selectActiveProgressionCards,
@@ -78,6 +79,20 @@ function noteToken(note: StaffNoteViewModel): string {
   return `${note.noteName}${note.octave}`;
 }
 
+function pressMidiNote(midiNoteNumber: number): void {
+  state().pressMidiNote(createMidiPressedNote({ midiNoteNumber, velocity: 96 }));
+}
+
+function midiPressedKeyIds(keys: readonly KeyboardKeyViewModel[]): readonly string[] {
+  return keys
+    .filter((key) => key.highlightLayers.includes('midiPressed'))
+    .map((key) => key.id);
+}
+
+function midiPressedStaffNotes(model: ScoreStaffViewModel): readonly StaffNoteViewModel[] {
+  return scoreNotes(model).filter((note) => note.highlightLayers.includes('midiPressed'));
+}
+
 describe('app state and selectors', () => {
   beforeEach(() => {
     resetStore();
@@ -127,15 +142,21 @@ describe('app state and selectors', () => {
       'inScale',
       'tonic',
       'activeChord',
+      'midiPressed',
       'chordRoot',
       'diminished'
     ]);
+    expect(selectColorLegend(state()).find((item) => item.id === 'midiPressed')).toMatchObject({
+      label: 'Нажато на MIDI',
+      description: 'физически нажатая клавиша подключенной MIDI-клавиатуры'
+    });
 
     state().setScaleFingeringEnabled(true);
     expect(selectColorLegend(state()).map((item) => item.id)).toEqual([
       'inScale',
       'tonic',
       'activeChord',
+      'midiPressed',
       'chordRoot',
       'diminished',
       'fingering',
@@ -313,6 +334,49 @@ describe('app state and selectors', () => {
     expect(tonicKeyWithoutChordLayer.highlightLayers).toEqual(['inScale', 'tonic']);
   });
 
+  it('adds MIDI highlight to the exact C4 keyboard key only', () => {
+    pressMidiNote(60);
+
+    const keyboard = selectKeyboardViewModel(state(), 'desktop');
+
+    expect(midiPressedKeyIds(keyboard.keys)).toEqual(['0-4']);
+    expect(keyById(keyboard.keys, '0-3').highlightLayers).not.toContain('midiPressed');
+    expect(keyById(keyboard.keys, '0-5').highlightLayers).not.toContain('midiPressed');
+    expect(keyById(keyboard.keys, '0-4').highlightLayers).toEqual([
+      'inScale',
+      'tonic',
+      'activeChord',
+      'midiPressed'
+    ]);
+  });
+
+  it('does not add keyboard MIDI highlight for out-of-range desktop notes', () => {
+    pressMidiNote(36);
+
+    expect(midiPressedKeyIds(selectKeyboardViewModel(state(), 'desktop').keys)).toEqual([]);
+  });
+
+  it('keeps C5 MIDI highlight on desktop and tablet but outside mobile keyboard keys', () => {
+    pressMidiNote(72);
+
+    expect(midiPressedKeyIds(selectKeyboardViewModel(state(), 'desktop').keys)).toEqual(['0-5']);
+    expect(midiPressedKeyIds(selectKeyboardViewModel(state(), 'tablet').keys)).toEqual(['0-5']);
+    expect(midiPressedKeyIds(selectKeyboardViewModel(state(), 'mobile').keys)).toEqual([]);
+  });
+
+  it('adds keyboard MIDI highlight for out-of-scale F#4 in C Major', () => {
+    pressMidiNote(66);
+
+    const keyboard = selectKeyboardViewModel(state(), 'desktop');
+    const fSharp = keyById(keyboard.keys, '6-4');
+
+    expect(fSharp).toMatchObject({
+      scaleNote: null,
+      noteLabel: null
+    });
+    expect(fSharp.highlightLayers).toEqual(['midiPressed']);
+  });
+
   it('returns no score staff model for the strip display mode', () => {
     expect(selectScoreStaffViewModel(state(), 'desktop')).toBeNull();
   });
@@ -404,18 +468,34 @@ describe('app state and selectors', () => {
     );
   });
 
+  it('does not add out-of-scale F#4 MIDI notes to the C Major staff model', () => {
+    pressMidiNote(66);
+    state().setScaleDisplayMode('staffImprovisation');
+
+    const model = requireScoreStaffViewModel(selectScoreStaffViewModel(state(), 'desktop'));
+    const notes = scoreNotes(model);
+
+    expect(model.slotCount).toBe(21);
+    expect(
+      notes.some((note) => note.physicalPitchClass === 6 && note.octave === 4)
+    ).toBe(false);
+    expect(midiPressedStaffNotes(model)).toEqual([]);
+  });
+
   it('gates improvisation active chord highlights with chordLayerEnabled', () => {
     state().setScaleDisplayMode('staffImprovisation');
 
     const withChordLayer = requireScoreStaffViewModel(selectScoreStaffViewModel(state(), 'desktop'));
-    const highlightedPitchClasses = new Set(
+    const activeChordPitchClasses = new Set(
       scoreNotes(withChordLayer)
-        .filter((note) => note.highlighted)
+        .filter((note) => note.highlightLayers.includes('activeChord'))
         .map((note) => note.physicalPitchClass)
     );
 
-    expect(scoreNotes(withChordLayer).filter((note) => note.highlighted)).toHaveLength(9);
-    expect(highlightedPitchClasses).toEqual(new Set([0, 4, 7]));
+    expect(
+      scoreNotes(withChordLayer).filter((note) => note.highlightLayers.includes('activeChord'))
+    ).toHaveLength(9);
+    expect(activeChordPitchClasses).toEqual(new Set([0, 4, 7]));
 
     state().setChordLayerEnabled(false);
 
@@ -423,7 +503,61 @@ describe('app state and selectors', () => {
       selectScoreStaffViewModel(state(), 'desktop')
     );
 
-    expect(scoreNotes(withoutChordLayer).filter((note) => note.highlighted)).toHaveLength(0);
+    expect(
+      scoreNotes(withoutChordLayer).filter((note) => note.highlightLayers.includes('activeChord'))
+    ).toHaveLength(0);
+  });
+
+  it('keeps MIDI highlight when the active chord layer is disabled', () => {
+    pressMidiNote(60);
+    state().setScaleDisplayMode('staffImprovisation');
+    state().setChordLayerEnabled(false);
+
+    const keyboard = selectKeyboardViewModel(state(), 'desktop');
+    const model = requireScoreStaffViewModel(selectScoreStaffViewModel(state(), 'desktop'));
+    const [c4Note] = midiPressedStaffNotes(model);
+
+    expect(keyById(keyboard.keys, '0-4').highlightLayers).toEqual([
+      'inScale',
+      'tonic',
+      'midiPressed'
+    ]);
+    expect(c4Note).toMatchObject({
+      noteName: 'C',
+      octave: 4,
+      highlightLayers: ['midiPressed']
+    });
+  });
+
+  it('adds MIDI highlight to exact existing staff notes in improvisation and practice modes', () => {
+    pressMidiNote(60);
+    state().setChordLayerEnabled(false);
+    state().setScaleDisplayMode('staffImprovisation');
+
+    const improvisationModel = requireScoreStaffViewModel(
+      selectScoreStaffViewModel(state(), 'desktop')
+    );
+    const improvisationMidiNotes = midiPressedStaffNotes(improvisationModel);
+
+    expect(improvisationMidiNotes.map(noteToken)).toEqual(['C4']);
+    expect(
+      scoreNotes(improvisationModel).filter(
+        (note) => note.physicalPitchClass === 0 && note.octave !== 4
+      ).every((note) => !note.highlightLayers.includes('midiPressed'))
+    ).toBe(true);
+
+    state().setScaleDisplayMode('staffPractice');
+
+    const practiceModel = requireScoreStaffViewModel(selectScoreStaffViewModel(state(), 'desktop'));
+    const practiceMidiNotes = midiPressedStaffNotes(practiceModel);
+
+    expect(practiceMidiNotes).toHaveLength(2);
+    expect(practiceMidiNotes.map(noteToken)).toEqual(['C4', 'C4']);
+    expect(
+      scoreNotes(practiceModel).filter(
+        (note) => note.physicalPitchClass === 0 && note.octave !== 4
+      ).every((note) => !note.highlightLayers.includes('midiPressed'))
+    ).toBe(true);
   });
 
   it('builds viewport-independent practice lines from the tonic nearest to C4', () => {
@@ -558,7 +692,9 @@ describe('app state and selectors', () => {
       4,
       5
     ]);
-    expect(scoreNotes(enabledModel).some((note) => note.highlighted)).toBe(false);
+    expect(
+      scoreNotes(enabledModel).some((note) => note.highlightLayers.includes('activeChord'))
+    ).toBe(false);
   });
 
   it('switches note and degree labels for major and natural minor independently from visibility', () => {

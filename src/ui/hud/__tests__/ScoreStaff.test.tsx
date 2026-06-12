@@ -9,7 +9,9 @@ import type {
   PhysicalPitchClass,
   PianoFinger,
   ScaleDegree,
+  ScoreStaffViewModel,
   StaffClef,
+  StaffHighlightLayer,
   StaffNoteViewModel
 } from '../../../music/types';
 
@@ -70,6 +72,56 @@ describe('ScoreStaff', () => {
     ).toBeTruthy();
   });
 
+  it('marks MIDI-pressed staff labels with stable data attributes', async () => {
+    const { container } = render(
+      <ScoreStaff
+        model={withNoteHighlightLayers(makeModel(cMajor), 'treble-0', ['midiPressed'])}
+        onOpenTheory={vi.fn()}
+      />
+    );
+
+    await waitForRenderedScore(container);
+
+    const label = requireElement(
+      container,
+      '.hud-score-staff__label[data-clef="treble"][data-slot-index="0"]'
+    );
+
+    expect(label.getAttribute('data-midi-pressed')).toBe('true');
+    expect(label.getAttribute('data-highlight-layers')).toBe('midiPressed');
+    expect(label.getAttribute('data-highlight-priority')).toBe('midiPressed');
+    expect(label.style.left).not.toBe('');
+    expect(label.style.top).not.toBe('');
+    expect(label.querySelector('.hud-score-staff__label-note')?.textContent).toBe('C');
+    expect(label.querySelector('.hud-score-staff__label-degree')?.textContent).toBe('1');
+    expect(label.querySelector('.hud-score-staff__label-finger')?.textContent).toBe('1');
+  });
+
+  it('keeps MIDI priority when active chord and MIDI highlights overlap', async () => {
+    const { container } = render(
+      <ScoreStaff
+        model={withNoteHighlightLayers(makeModel(cMajor), 'treble-1', [
+          'activeChord',
+          'midiPressed'
+        ])}
+        onOpenTheory={vi.fn()}
+      />
+    );
+
+    await waitForRenderedScore(container);
+
+    const label = requireElement(
+      container,
+      '.hud-score-staff__label[data-clef="treble"][data-slot-index="1"]'
+    );
+
+    expect(label.getAttribute('data-midi-pressed')).toBe('true');
+    expect(label.getAttribute('data-highlight-layers')).toBe('activeChord midiPressed');
+    expect(label.getAttribute('data-highlight-priority')).toBe('midiPressed');
+    expect(label.querySelector('.hud-score-staff__label-note')?.textContent).toBe('D');
+    expect(label.querySelector('.hud-score-staff__label-degree')?.textContent).toBe('2');
+  });
+
   it('exposes the VexFlow key signature contract for both staves', async () => {
     const { container } = render(
       <ScoreStaff model={makeModel(fMajor)} onOpenTheory={vi.fn()} />
@@ -96,7 +148,45 @@ describe('ScoreStaff', () => {
   });
 });
 
-function makeModel(key: KeyDefinition) {
+async function waitForRenderedScore(container: HTMLElement): Promise<void> {
+  await waitFor(() => {
+    expect(container.querySelectorAll('.hud-score-staff__renderer svg')).toHaveLength(1);
+    expect(container.querySelectorAll('.hud-score-staff__label').length).toBeGreaterThan(0);
+  });
+}
+
+function requireElement(container: HTMLElement, selector: string): HTMLElement {
+  const element = container.querySelector(selector);
+
+  expect(element).toBeTruthy();
+
+  return element as HTMLElement;
+}
+
+function withNoteHighlightLayers(
+  model: ScoreStaffViewModel,
+  noteId: string,
+  highlightLayers: readonly StaffHighlightLayer[]
+): ScoreStaffViewModel {
+  const updateLine = (line: ScoreStaffViewModel['lines'][number]) => ({
+    ...line,
+    notes: line.notes.map((note) =>
+      note.id === noteId
+        ? {
+            ...note,
+            highlightLayers
+          }
+        : note
+    )
+  });
+
+  return {
+    ...model,
+    lines: [updateLine(model.lines[0]), updateLine(model.lines[1])]
+  };
+}
+
+function makeModel(key: KeyDefinition): ScoreStaffViewModel {
   return {
     mode: 'staffPractice',
     key,
@@ -106,17 +196,17 @@ function makeModel(key: KeyDefinition) {
       {
         clef: 'treble',
         notes: [
-          makeStaffNote('treble-0', 'C', 0, 1, 'treble', 0, 4, false, 1),
-          makeStaffNote('treble-1', 'D', 2, 2, 'treble', 1, 4, true, 2),
-          makeStaffNote('treble-2', 'E', 4, 3, 'treble', 2, 4, false, 3)
+          makeStaffNote('treble-0', 'C', 0, 1, 'treble', 0, 4, 1),
+          makeStaffNote('treble-1', 'D', 2, 2, 'treble', 1, 4, 2, ['activeChord']),
+          makeStaffNote('treble-2', 'E', 4, 3, 'treble', 2, 4, 3)
         ]
       },
       {
         clef: 'bass',
         notes: [
-          makeStaffNote('bass-0', 'C', 0, 1, 'bass', 0, 3, false, 5),
-          makeStaffNote('bass-1', 'B', 11, 7, 'bass', 1, 2, false, 5),
-          makeStaffNote('bass-2', 'A', 9, 6, 'bass', 2, 2, false, 4)
+          makeStaffNote('bass-0', 'C', 0, 1, 'bass', 0, 3, 5),
+          makeStaffNote('bass-1', 'B', 11, 7, 'bass', 1, 2, 5),
+          makeStaffNote('bass-2', 'A', 9, 6, 'bass', 2, 2, 4)
         ]
       }
     ]
@@ -131,8 +221,8 @@ function makeStaffNote(
   clef: StaffClef,
   slotIndex: number,
   octave: number,
-  highlighted: boolean,
-  finger: PianoFinger | null
+  finger: PianoFinger | null,
+  highlightLayers: readonly StaffHighlightLayer[] = []
 ): StaffNoteViewModel {
   return {
     id,
@@ -143,7 +233,7 @@ function makeStaffNote(
     octave,
     clef,
     slotIndex,
-    highlighted,
+    highlightLayers,
     finger
   };
 }

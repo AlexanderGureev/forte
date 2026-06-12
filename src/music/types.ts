@@ -64,7 +64,23 @@ export type ScaleFingeringPattern = readonly [
 
 export type ScaleFingeringOctaveOffset = 0 | 1;
 
-export type KeyboardHighlightLayer = 'inScale' | 'tonic' | 'activeChord' | 'diminished';
+export type MidiNoteNumber = number;
+
+export interface MidiPressedNote {
+  readonly midiNoteNumber: MidiNoteNumber;
+  readonly physicalPitchClass: PhysicalPitchClass;
+  readonly octave: number;
+  readonly velocity: number;
+}
+
+export type KeyboardHighlightLayer =
+  | 'inScale'
+  | 'tonic'
+  | 'activeChord'
+  | 'diminished'
+  | 'midiPressed';
+
+export type StaffHighlightLayer = 'activeChord' | 'midiPressed';
 
 export type TheoryOverlayContextTarget =
   | 'key'
@@ -161,7 +177,7 @@ export interface StaffNoteViewModel {
   readonly octave: number;
   readonly clef: StaffClef;
   readonly slotIndex: number;
-  readonly highlighted: boolean;
+  readonly highlightLayers: readonly StaffHighlightLayer[];
   readonly finger: PianoFinger | null;
 }
 
@@ -245,6 +261,7 @@ export interface KeyboardViewModelInput {
   readonly key: KeyDefinition;
   readonly scale: Scale;
   readonly activeChord: DiatonicChord | null;
+  readonly activeMidiNotes: readonly MidiPressedNote[];
   readonly chordLayerEnabled: boolean;
   readonly scaleFingering: ScaleFingering | null;
   readonly labelMode: LabelMode;

@@ -22,5 +22,6 @@ export const HIGHLIGHT_COLORS = {
   inScale: '#c89a55',
   tonic: '#ffc14f',
   activeChord: '#ffb13c',
-  diminished: '#e25c4a'
+  diminished: '#e25c4a',
+  midiPressed: '#4bdcff'
 } as const;

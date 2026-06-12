@@ -3,6 +3,7 @@ import { PianoStudioScene } from '../scene/PianoStudioScene';
 import { ChordPanel } from '../ui/hud/ChordPanel';
 import { ColorLegend } from '../ui/hud/ColorLegend';
 import { LabelModeControl } from '../ui/hud/LabelModeControl';
+import { MidiPanel, type MidiPanelProps } from '../ui/hud/MidiPanel';
 import { ProgressionHud } from '../ui/hud/ProgressionHud';
 import { RecommendedKeys } from '../ui/hud/RecommendedKeys';
 import { ScaleFingeringControl } from '../ui/hud/ScaleFingeringControl';
@@ -14,6 +15,7 @@ import {
   usePrimitiveHotkeys,
   usePrimitiveUiConfig
 } from '../ui/primitives';
+import { useMidiController } from '../midi/useMidiController';
 import { useAppStore } from '../state/app-state';
 import {
   selectActiveChordStatus,
@@ -35,7 +37,7 @@ import type {
   PhysicalPitchClass
 } from '../music/types';
 
-type MobileSheet = 'keys' | 'chords';
+type MobileSheet = 'keys' | 'chords' | 'midi';
 
 /** Ширины боковых зон HUD для кадрирования камеры (px). */
 const RAIL_EXPANDED_PX = 272;
@@ -57,11 +59,12 @@ export function AppShell() {
   const viewport = useKeyboardViewport();
   const isWide = viewport === 'desktop';
   const uiConfig = usePrimitiveUiConfig(store.focusMode);
+  const midiController = useMidiController();
   usePrimitiveHotkeys();
 
   const [enharmonicPitchClass, setEnharmonicPitchClass] = useState<PhysicalPitchClass | null>(null);
   const [openSheet, setSheet] = useState<MobileSheet | null>(null);
-  const sheet = store.focusMode ? null : openSheet;
+  const sheet = store.focusMode && openSheet !== 'midi' ? null : openSheet;
 
   // На узких десктопах боковые панели свернуты по умолчанию, чтобы клавиатура
   // оставалась главным элементом сцены; ручной выбор пользователя приоритетнее.
@@ -158,6 +161,13 @@ export function AppShell() {
   );
 
   const legendPanel = <ColorLegend items={colorLegend} onOpenTheory={store.openTheoryOverlay} />;
+  const midiPanelProps: MidiPanelProps = {
+    midi: store.midi,
+    onRequestAccess: midiController.requestAccess,
+    onSelectInput: midiController.selectInput,
+    onDisconnect: midiController.disconnect
+  };
+  const midiPanel = <MidiPanel {...midiPanelProps} showTitle={false} />;
 
   return (
     <div className="app-stage" data-focus={store.focusMode ? 'true' : 'false'}>
@@ -206,6 +216,7 @@ export function AppShell() {
               labelMode={store.labelMode}
               onToggleLabels={store.toggleLabelsVisible}
               onSelectLabelMode={store.setLabelMode}
+              midiPanel={midiPanelProps}
               colorLegend={colorLegend}
               onOpenTheory={store.openTheoryOverlay}
               focusMode={store.focusMode}
@@ -286,6 +297,14 @@ export function AppShell() {
                 Аккорды
               </button>
             ) : null}
+            <button
+              className="hud-action"
+              type="button"
+              aria-pressed={sheet === 'midi'}
+              onClick={() => setSheet(sheet === 'midi' ? null : 'midi')}
+            >
+              MIDI
+            </button>
             <button className="hud-action" type="button" onClick={() => store.openTheoryOverlay('key')}>
               Теория
             </button>
@@ -314,12 +333,10 @@ export function AppShell() {
             className="sheet"
             role="dialog"
             aria-modal="true"
-            aria-label={sheet === 'keys' ? 'Выбор тональности' : 'Диатонические аккорды'}
+            aria-label={getSheetAriaLabel(sheet)}
           >
             <header className="sheet__header">
-              <span className="hud-eyebrow">
-                {sheet === 'keys' ? 'Тональность и вид' : 'Аккорды'}
-              </span>
+              <span className="hud-eyebrow">{getSheetTitle(sheet)}</span>
               <button
                 className="hud-action"
                 type="button"
@@ -369,11 +386,13 @@ export function AppShell() {
                     </div>
                   </section>
                 </>
-              ) : (
+              ) : sheet === 'chords' ? (
                 <>
                   {makeChordsPanel()}
                   {legendPanel}
                 </>
+              ) : (
+                midiPanel
               )}
             </div>
           </div>
@@ -452,6 +471,28 @@ export function AppShell() {
       ) : null}
     </div>
   );
+}
+
+function getSheetAriaLabel(sheet: MobileSheet): string {
+  switch (sheet) {
+    case 'keys':
+      return 'Выбор тональности';
+    case 'chords':
+      return 'Диатонические аккорды';
+    case 'midi':
+      return 'MIDI';
+  }
+}
+
+function getSheetTitle(sheet: MobileSheet): string {
+  switch (sheet) {
+    case 'keys':
+      return 'Тональность и вид';
+    case 'chords':
+      return 'Аккорды';
+    case 'midi':
+      return 'MIDI';
+  }
 }
 
 function canUseMatchMedia(): boolean {

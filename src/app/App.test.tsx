@@ -1,15 +1,51 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { createInitialAppState, useAppStore } from '../state/app-state';
+import { createMidiPressedNote } from '../music/midi-notes';
+import type { MidiInputDevice } from '../midi/types';
+
+const midiControllerMock = vi.hoisted(() => ({
+  requestAccess: vi.fn<() => Promise<void>>(),
+  selectInput: vi.fn<(inputId: string) => void>(),
+  disconnect: vi.fn<() => void>()
+}));
 
 vi.mock('../scene/PianoStudioScene', () => ({
   PianoStudioScene: () => <div data-testid="studio-scene" />
 }));
 
+vi.mock('../midi/useMidiController', () => ({
+  useMidiController: () => midiControllerMock
+}));
+
+const inputOne: MidiInputDevice = {
+  id: 'input-one',
+  name: 'Stage Piano',
+  manufacturer: null,
+  connected: true
+};
+
+const inputTwo: MidiInputDevice = {
+  id: 'input-two',
+  name: 'Control Keyboard',
+  manufacturer: 'Acme',
+  connected: true
+};
+
 describe('App', () => {
   beforeEach(() => {
     useAppStore.setState(createInitialAppState(), false);
+    midiControllerMock.requestAccess.mockReset();
+    midiControllerMock.selectInput.mockReset();
+    midiControllerMock.disconnect.mockReset();
+    midiControllerMock.requestAccess.mockResolvedValue(undefined);
+    midiControllerMock.selectInput.mockImplementation((inputId) => {
+      useAppStore.getState().setMidiConnected(inputId, useAppStore.getState().midi.inputs);
+    });
+    midiControllerMock.disconnect.mockImplementation(() => {
+      useAppStore.getState().disconnectMidiInput();
+    });
     setViewportWidth(1024);
   });
 
@@ -22,6 +58,148 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Фокус' })).toBeTruthy();
     expect(screen.getByLabelText('Ноты гаммы')).toBeTruthy();
     expect(screen.queryByRole('img', { name: /Партитура гаммы/ })).toBeNull();
+  });
+
+  it('shows the desktop MIDI button and requests access only from the panel action', () => {
+    renderDesktopApp();
+
+    const midiButton = screen.getByRole('button', { name: 'MIDI' });
+
+    expect(midiButton).toBeTruthy();
+    expect(midiControllerMock.requestAccess).not.toHaveBeenCalled();
+
+    fireEvent.click(midiButton);
+
+    const dialog = screen.getByRole('dialog', { name: 'MIDI' });
+
+    expect(dialog).toBeTruthy();
+    expect(midiControllerMock.requestAccess).not.toHaveBeenCalled();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Подключить' }));
+
+    expect(midiControllerMock.requestAccess).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows the compact MIDI button in the bottom toolbar and opens the sheet', () => {
+    setViewportWidth(640);
+    render(<App />);
+
+    const toolbar = screen.getByRole('navigation', { name: 'Панели управления' });
+    const midiButton = within(toolbar).getByRole('button', { name: 'MIDI' });
+
+    expect(midiButton).toBeTruthy();
+
+    fireEvent.click(midiButton);
+
+    expect(screen.getByRole('dialog', { name: 'MIDI' })).toBeTruthy();
+  });
+
+  it.each([
+    [
+      'unsupported',
+      () => useAppStore.getState().setMidiUnsupported('Not supported.'),
+      'MIDI не поддерживается этим браузером'
+    ],
+    [
+      'permission denied',
+      () => useAppStore.getState().setMidiPermissionDenied('Permission denied.'),
+      'Разрешение на MIDI отклонено'
+    ],
+    ['no inputs', () => useAppStore.getState().setMidiNoInputs(), 'Устройство не найдено'],
+    [
+      'disconnected',
+      () => useAppStore.getState().setMidiDisconnected('Disconnected.', [inputTwo]),
+      'Устройство отключено'
+    ],
+    ['error', () => useAppStore.getState().setMidiError('Adapter failed.'), 'Ошибка MIDI']
+  ] as const)('renders the %s MIDI status message', (_label, setStatus, expectedMessage) => {
+    setStatus();
+    renderDesktopApp();
+
+    fireEvent.click(screen.getByRole('button', { name: 'MIDI' }));
+
+    expect(
+      within(screen.getByRole('dialog', { name: 'MIDI' })).getByText(expectedMessage)
+    ).toBeTruthy();
+  });
+
+  it('shows the auto-connected single input after the request action resolves', async () => {
+    midiControllerMock.requestAccess.mockImplementation(async () => {
+      useAppStore.getState().setMidiRequesting();
+      useAppStore.getState().setMidiConnected(inputOne.id, [inputOne]);
+    });
+
+    renderDesktopApp();
+    fireEvent.click(screen.getByRole('button', { name: 'MIDI' }));
+    fireEvent.click(
+      within(screen.getByRole('dialog', { name: 'MIDI' })).getByRole('button', {
+        name: 'Подключить'
+      })
+    );
+
+    expect(await screen.findByText('Подключено: Stage Piano')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'MIDI' }));
+    fireEvent.click(screen.getByRole('button', { name: 'MIDI' }));
+
+    expect(midiControllerMock.requestAccess).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders multiple MIDI inputs as selectable radio-like controls', () => {
+    useAppStore.getState().setMidiReady([inputOne, inputTwo]);
+    renderDesktopApp();
+
+    fireEvent.click(screen.getByRole('button', { name: 'MIDI' }));
+
+    const dialog = screen.getByRole('dialog', { name: 'MIDI' });
+    const inputGroup = within(dialog).getByRole('radiogroup', { name: 'MIDI inputs' });
+
+    expect(within(inputGroup).getAllByRole('radio')).toHaveLength(2);
+
+    fireEvent.click(within(inputGroup).getByRole('radio', { name: /Control Keyboard/ }));
+
+    expect(midiControllerMock.selectInput).toHaveBeenCalledWith(inputTwo.id);
+  });
+
+  it('disconnects through the MIDI panel, clears active notes and keeps the HUD usable', () => {
+    useAppStore.getState().setMidiConnected(inputOne.id, [inputOne]);
+    useAppStore
+      .getState()
+      .pressMidiNote(createMidiPressedNote({ midiNoteNumber: 60, velocity: 96 }));
+
+    renderDesktopApp();
+    fireEvent.click(screen.getByRole('button', { name: 'MIDI' }));
+    fireEvent.click(
+      within(screen.getByRole('dialog', { name: 'MIDI' })).getByRole('button', {
+        name: 'Отключить'
+      })
+    );
+
+    expect(midiControllerMock.disconnect).toHaveBeenCalledTimes(1);
+    expect(useAppStore.getState().midi.activeNotes).toEqual([]);
+    expect(screen.getByLabelText('Ноты гаммы')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Фокус' })).toBeTruthy();
+  });
+
+  it('keeps the ScaleStrip and ScoreStaff rendering according to the selected mode', async () => {
+    renderDesktopApp();
+
+    expect(screen.getByLabelText('Ноты гаммы')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'MIDI' }));
+
+    expect(screen.getByLabelText('Ноты гаммы')).toBeTruthy();
+
+    act(() => {
+      useAppStore.getState().setScaleDisplayMode('staffPractice');
+    });
+
+    expect(
+      await screen.findByRole('img', {
+        name: 'Партитура гаммы C Major, режим Практика'
+      })
+    ).toBeTruthy();
+    expect(screen.queryByLabelText('Ноты гаммы')).toBeNull();
   });
 
   it('switches the desktop View menu scale display control to improvisation score', async () => {
@@ -97,7 +275,7 @@ describe('App', () => {
     ).toEqual(['Плашка', 'Импровизация', 'Практика']);
   });
 
-  it('removes rendered improvisation highlights when Scale only is enabled', async () => {
+  it('removes rendered improvisation active-chord highlights when Scale only is enabled', async () => {
     const { container } = renderDesktopApp();
     const viewMenu = getDesktopViewMenu();
     const scaleDisplayControl = within(viewMenu).getByRole('group', { name: 'Вид гаммы' });
@@ -109,12 +287,12 @@ describe('App', () => {
     });
     await waitForRenderedScore(container);
 
-    expect(highlightedScoreLabels(container).length).toBeGreaterThan(0);
+    expect(activeChordScoreLabels(container).length).toBeGreaterThan(0);
 
     fireEvent.click(within(viewMenu).getByRole('button', { name: 'Только гамма' }));
 
     await waitFor(() => {
-      expect(highlightedScoreLabels(container)).toHaveLength(0);
+      expect(activeChordScoreLabels(container)).toHaveLength(0);
     });
   });
 
@@ -130,7 +308,7 @@ describe('App', () => {
     });
     await waitForRenderedScore(container);
 
-    expect(highlightedScoreLabels(container)).toHaveLength(0);
+    expect(activeChordScoreLabels(container)).toHaveLength(0);
     expect(fingeredScoreLabels(container)).toHaveLength(0);
 
     fireEvent.click(within(viewMenu).getByRole('button', { name: 'Аппликатура' }));
@@ -138,7 +316,7 @@ describe('App', () => {
     await waitFor(() => {
       expect(fingeredScoreLabels(container).length).toBeGreaterThan(0);
     });
-    expect(highlightedScoreLabels(container)).toHaveLength(0);
+    expect(activeChordScoreLabels(container)).toHaveLength(0);
 
     fireEvent.click(within(scaleDisplayControl).getByRole('button', { name: 'Импровизация' }));
 
@@ -183,8 +361,10 @@ async function waitForRenderedScore(container: HTMLElement): Promise<void> {
   });
 }
 
-function highlightedScoreLabels(container: HTMLElement): NodeListOf<Element> {
-  return container.querySelectorAll('.hud-score-staff__label[data-highlighted="true"]');
+function activeChordScoreLabels(container: HTMLElement): NodeListOf<Element> {
+  return container.querySelectorAll(
+    '.hud-score-staff__label[data-highlight-layers~="activeChord"]'
+  );
 }
 
 function fingeredScoreLabels(container: HTMLElement): NodeListOf<Element> {

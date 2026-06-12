@@ -47,6 +47,7 @@ const CHORD_COLOR_MIX: Record<ChordKeyEmphasis, number> = {
 
 const HOVER_GLOW = new Color('#ffe7bd');
 const PRESS_DEPTH = 0.07;
+const MIDI_GLOW_INTENSITY = 0.64;
 
 export function PianoKey3D({
   keyModel,
@@ -64,6 +65,9 @@ export function PianoKey3D({
   const inScale = keyModel.highlightLayers.includes('inScale');
   const isTonic = keyModel.highlightLayers.includes('tonic');
   const isDiminished = keyModel.highlightLayers.includes('diminished');
+  const midiPressed = keyModel.highlightLayers.includes('midiPressed');
+  const keyPressed = pressed || midiPressed;
+  const chordMaterialEmphasis = midiPressed ? null : chordEmphasis;
 
   const width = isWhite ? WHITE_KEY_WIDTH : BLACK_KEY_WIDTH;
   const height = isWhite ? WHITE_KEY_HEIGHT : BLACK_KEY_HEIGHT;
@@ -74,19 +78,29 @@ export function PianoKey3D({
   const dotZ = isWhite ? length / 2 - 1.18 : 0.62;
   const hasFingeringBadge = keyModel.fingeringLabel !== null;
   const markerZ = isWhite ? 0.95 : -0.05;
-  const fingeringBadge = getFingeringBadgeColors(chordEmphasis);
-  const glowColor = isDiminished ? HIGHLIGHT_COLORS.diminished : HIGHLIGHT_COLORS.activeChord;
+  const fingeringBadge = getFingeringBadgeColors(chordMaterialEmphasis);
+  const glowColor = midiPressed
+    ? HIGHLIGHT_COLORS.midiPressed
+    : isDiminished
+      ? HIGHLIGHT_COLORS.diminished
+      : HIGHLIGHT_COLORS.activeChord;
   const baseColor = isWhite ? SCENE_COLORS.whiteKey : SCENE_COLORS.blackKey;
   // Hover подмешивает янтарь в цвет клавиши: на белой слоновой кости
   // одно лишь свечение (emissive) почти не читается.
   const keyColor =
-    chordEmphasis !== null
-      ? `#${new Color(baseColor).lerp(new Color(glowColor), CHORD_COLOR_MIX[chordEmphasis]).getHexString()}`
-      : hovered
+    midiPressed
+      ? `#${new Color(baseColor)
+          .lerp(new Color(HIGHLIGHT_COLORS.midiPressed), isWhite ? 0.56 : 0.72)
+          .getHexString()}`
+      : chordMaterialEmphasis !== null
         ? `#${new Color(baseColor)
-            .lerp(new Color(HIGHLIGHT_COLORS.activeChord), isWhite ? 0.34 : 0.45)
+            .lerp(new Color(glowColor), CHORD_COLOR_MIX[chordMaterialEmphasis])
             .getHexString()}`
-        : baseColor;
+        : hovered
+          ? `#${new Color(baseColor)
+              .lerp(new Color(HIGHLIGHT_COLORS.activeChord), isWhite ? 0.34 : 0.45)
+              .getHexString()}`
+          : baseColor;
 
   useFrame((state) => {
     const material = keyMaterialRef.current;
@@ -95,10 +109,12 @@ export function PianoKey3D({
       return;
     }
 
-    if (chordEmphasis !== null) {
-      const base = CHORD_GLOW_INTENSITY[chordEmphasis];
+    if (midiPressed) {
+      material.emissiveIntensity = hovered ? MIDI_GLOW_INTENSITY + 0.1 : MIDI_GLOW_INTENSITY;
+    } else if (chordMaterialEmphasis !== null) {
+      const base = CHORD_GLOW_INTENSITY[chordMaterialEmphasis];
       material.emissiveIntensity =
-        motionEnabled && chordEmphasis !== 'echo'
+        motionEnabled && chordMaterialEmphasis !== 'echo'
           ? base + Math.sin(state.clock.elapsedTime * 2.6) * 0.07
           : base;
     } else {
@@ -112,7 +128,7 @@ export function PianoKey3D({
         args={[width, height, length]}
         radius={isWhite ? 0.035 : 0.07}
         smoothness={4}
-        position={[0, placement.y - (pressed ? PRESS_DEPTH : 0), 0]}
+        position={[0, placement.y - (keyPressed ? PRESS_DEPTH : 0), 0]}
         castShadow
         receiveShadow
         onClick={(event) => {
@@ -141,7 +157,7 @@ export function PianoKey3D({
           metalness={0.02}
           clearcoat={isWhite ? 0.35 : 1}
           clearcoatRoughness={isWhite ? 0.3 : 0.12}
-          emissive={chordEmphasis !== null ? glowColor : HOVER_GLOW}
+          emissive={midiPressed || chordMaterialEmphasis !== null ? glowColor : HOVER_GLOW}
           emissiveIntensity={0}
         />
       </RoundedBox>
@@ -193,7 +209,7 @@ export function PianoKey3D({
           rotation={[-Math.PI / 2, 0, 0]}
           font={keyLabelFontUrl}
           fontSize={isWhite ? 0.32 : 0.24}
-          color={getLabelColor(isWhite, chordEmphasis)}
+          color={getLabelColor(isWhite, chordMaterialEmphasis, midiPressed)}
           anchorX="center"
           anchorY="middle"
         >
@@ -238,7 +254,15 @@ export function PianoKey3D({
 }
 
 /** На золотой подсветке аккорда читается только темная подпись — особенно на черных клавишах. */
-function getLabelColor(isWhite: boolean, chordEmphasis: ChordKeyEmphasis | null): string {
+function getLabelColor(
+  isWhite: boolean,
+  chordEmphasis: ChordKeyEmphasis | null,
+  midiPressed: boolean
+): string {
+  if (midiPressed) {
+    return '#092636';
+  }
+
   if (chordEmphasis === 'root' || chordEmphasis === 'primary') {
     return '#2a1c0c';
   }
