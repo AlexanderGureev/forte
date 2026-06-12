@@ -8,6 +8,7 @@ import type {
   ColorLegendItem,
   LabelMode,
   Mode,
+  ScaleDisplayMode,
   ScaleFingeringDirection,
   ScaleFingeringHand,
   TheoryOverlayContextTarget
@@ -17,6 +18,8 @@ export interface TopHudProps {
   readonly scaleSummary: ScaleSummary;
   readonly mode: Mode;
   readonly onSelectMode: (mode: Mode) => void;
+  readonly scaleDisplayMode: ScaleDisplayMode;
+  readonly onSelectScaleDisplayMode: (mode: ScaleDisplayMode) => void;
   readonly labelMode: LabelMode;
   readonly onSelectLabelMode: (labelMode: LabelMode) => void;
   readonly labelsVisible: boolean;
@@ -43,10 +46,21 @@ const DIFFICULTY_LABELS = {
   advanced: 'сложная'
 } as const;
 
+const SCALE_DISPLAY_MODE_OPTIONS = [
+  { value: 'strip', label: 'Плашка' },
+  { value: 'staffImprovisation', label: 'Импровизация' },
+  { value: 'staffPractice', label: 'Практика' }
+] as const satisfies readonly {
+  readonly value: ScaleDisplayMode;
+  readonly label: string;
+}[];
+
 export function TopHud({
   scaleSummary,
   mode,
   onSelectMode,
+  scaleDisplayMode,
+  onSelectScaleDisplayMode,
   labelMode,
   onSelectLabelMode,
   labelsVisible,
@@ -128,6 +142,8 @@ export function TopHud({
               onToggleScaleFingering={onToggleScaleFingering}
               onSelectScaleFingeringHand={onSelectScaleFingeringHand}
               onSelectScaleFingeringDirection={onSelectScaleFingeringDirection}
+              scaleDisplayMode={scaleDisplayMode}
+              onSelectScaleDisplayMode={onSelectScaleDisplayMode}
               labelsVisible={labelsVisible}
               labelMode={labelMode}
               onToggleLabels={onToggleLabels}
@@ -158,6 +174,26 @@ export function TopHud({
   );
 }
 
+interface ScaleDisplayModeControlProps {
+  readonly scaleDisplayMode: ScaleDisplayMode;
+  readonly onSelectScaleDisplayMode: (mode: ScaleDisplayMode) => void;
+}
+
+export function ScaleDisplayModeControl({
+  scaleDisplayMode,
+  onSelectScaleDisplayMode
+}: ScaleDisplayModeControlProps) {
+  return (
+    <SegmentedControl<ScaleDisplayMode>
+      label="Вид гаммы"
+      value={scaleDisplayMode}
+      options={SCALE_DISPLAY_MODE_OPTIONS}
+      onChange={onSelectScaleDisplayMode}
+      className="hud-scale-display-control"
+    />
+  );
+}
+
 interface ViewMenuProps {
   readonly chordLayerEnabled: boolean;
   readonly onToggleChordLayer: () => void;
@@ -167,6 +203,8 @@ interface ViewMenuProps {
   readonly onToggleScaleFingering: () => void;
   readonly onSelectScaleFingeringHand: (hand: ScaleFingeringHand) => void;
   readonly onSelectScaleFingeringDirection: (direction: ScaleFingeringDirection) => void;
+  readonly scaleDisplayMode: ScaleDisplayMode;
+  readonly onSelectScaleDisplayMode: (mode: ScaleDisplayMode) => void;
   readonly labelsVisible: boolean;
   readonly labelMode: LabelMode;
   readonly onToggleLabels: () => void;
@@ -185,6 +223,8 @@ function ViewMenu({
   onToggleScaleFingering,
   onSelectScaleFingeringHand,
   onSelectScaleFingeringDirection,
+  scaleDisplayMode,
+  onSelectScaleDisplayMode,
   labelsVisible,
   labelMode,
   onToggleLabels,
@@ -248,6 +288,13 @@ function ViewMenu({
             />
           </div>
           <div className="hud-view-menu__row">
+            <span className="hud-view-menu__label">Вид гаммы</span>
+            <ScaleDisplayModeControl
+              scaleDisplayMode={scaleDisplayMode}
+              onSelectScaleDisplayMode={onSelectScaleDisplayMode}
+            />
+          </div>
+          <div className="hud-view-menu__row">
             <span className="hud-view-menu__label">Слой аккорда</span>
             <button
               className="hud-toggle"
@@ -264,6 +311,7 @@ function ViewMenu({
               enabled={scaleFingeringEnabled}
               hand={scaleFingeringHand}
               direction={scaleFingeringDirection}
+              handDirectionEnabled={scaleDisplayMode === 'strip'}
               onToggleEnabled={onToggleScaleFingering}
               onSelectHand={onSelectScaleFingeringHand}
               onSelectDirection={onSelectScaleFingeringDirection}

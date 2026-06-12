@@ -11,6 +11,7 @@ import type {
   ScaleFingeringDirection,
   ScaleFingeringHand,
   ScaleDegree,
+  ScaleDisplayMode,
   TheoryOverlayContextTarget
 } from '../music/types';
 
@@ -29,6 +30,7 @@ export interface AppState {
   readonly scaleFingeringEnabled: boolean;
   readonly scaleFingeringHand: ScaleFingeringHand;
   readonly scaleFingeringDirection: ScaleFingeringDirection;
+  readonly scaleDisplayMode: ScaleDisplayMode;
   readonly labelMode: LabelMode;
   readonly labelsVisible: boolean;
   readonly focusMode: boolean;
@@ -47,6 +49,7 @@ export interface AppActions {
   readonly toggleScaleFingering: () => void;
   readonly setScaleFingeringHand: (hand: ScaleFingeringHand) => void;
   readonly setScaleFingeringDirection: (direction: ScaleFingeringDirection) => void;
+  readonly setScaleDisplayMode: (mode: ScaleDisplayMode) => void;
   readonly setLabelMode: (labelMode: LabelMode) => void;
   readonly setLabelsVisible: (visible: boolean) => void;
   readonly toggleLabelsVisible: () => void;
@@ -77,6 +80,11 @@ const SCALE_FINGERING_DIRECTIONS = [
   'ascending',
   'descending'
 ] as const satisfies readonly ScaleFingeringDirection[];
+const SCALE_DISPLAY_MODES = [
+  'strip',
+  'staffImprovisation',
+  'staffPractice'
+] as const satisfies readonly ScaleDisplayMode[];
 
 export function createInitialAppState(): AppState {
   const key = resolveKey(DEFAULT_KEY_SELECTION);
@@ -91,6 +99,7 @@ export function createInitialAppState(): AppState {
     scaleFingeringEnabled: false,
     scaleFingeringHand: 'right',
     scaleFingeringDirection: 'ascending',
+    scaleDisplayMode: 'strip',
     labelMode: 'notes',
     labelsVisible: true,
     focusMode: false,
@@ -216,6 +225,11 @@ export const useAppStore = create<AppStore>()((set) => ({
     set({ scaleFingeringDirection: direction });
   },
 
+  setScaleDisplayMode: (mode) => {
+    assertScaleDisplayMode(mode);
+    set({ scaleDisplayMode: mode });
+  },
+
   setLabelMode: (labelMode) => {
     assertLabelMode(labelMode);
     set({ labelMode });
@@ -320,6 +334,14 @@ function assertScaleFingeringHand(hand: ScaleFingeringHand): void {
 function assertScaleFingeringDirection(direction: ScaleFingeringDirection): void {
   if (!SCALE_FINGERING_DIRECTIONS.some((candidate) => candidate === direction)) {
     throw new Error(`Unsupported scale fingering direction "${direction}".`);
+  }
+}
+
+function assertScaleDisplayMode(mode: ScaleDisplayMode): void {
+  if (!SCALE_DISPLAY_MODES.some((candidate) => candidate === mode)) {
+    throw new Error(
+      `Unsupported scale display mode "${mode}". Expected "strip", "staffImprovisation", or "staffPractice".`
+    );
   }
 }
 

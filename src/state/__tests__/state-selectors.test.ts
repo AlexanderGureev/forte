@@ -8,12 +8,16 @@ import {
   selectCurrentKey,
   selectKeyboardViewModel,
   selectRecommendedKeys,
+  selectScoreStaffViewModel,
   selectScaleSummary,
   selectTheoryOverlayModel
 } from '../selectors';
 import type {
   KeyboardKeyViewModel,
   PhysicalPitchClass,
+  ScaleDisplayMode,
+  ScoreStaffViewModel,
+  StaffNoteViewModel,
   TheoryOverlayModel,
   TheoryOverlaySection
 } from '../../music/types';
@@ -56,6 +60,24 @@ function sectionById(
   return section as TheoryOverlaySection;
 }
 
+function requireScoreStaffViewModel(model: ScoreStaffViewModel | null): ScoreStaffViewModel {
+  expect(model).not.toBeNull();
+
+  return model as ScoreStaffViewModel;
+}
+
+function scoreNotes(model: ScoreStaffViewModel): readonly StaffNoteViewModel[] {
+  return model.lines.flatMap((line) => line.notes);
+}
+
+function scoreNotesBySlot(model: ScoreStaffViewModel): readonly StaffNoteViewModel[] {
+  return [...scoreNotes(model)].sort((left, right) => left.slotIndex - right.slotIndex);
+}
+
+function noteToken(note: StaffNoteViewModel): string {
+  return `${note.noteName}${note.octave}`;
+}
+
 describe('app state and selectors', () => {
   beforeEach(() => {
     resetStore();
@@ -72,6 +94,7 @@ describe('app state and selectors', () => {
       scaleFingeringEnabled: false,
       scaleFingeringHand: 'right',
       scaleFingeringDirection: 'ascending',
+      scaleDisplayMode: 'strip',
       labelMode: 'notes',
       labelsVisible: true,
       focusMode: false,
@@ -118,6 +141,24 @@ describe('app state and selectors', () => {
       'fingering',
       'fingeringOnChord'
     ]);
+  });
+
+  it('switches scale display modes and rejects unsupported values', () => {
+    const supportedModes = [
+      'strip',
+      'staffImprovisation',
+      'staffPractice'
+    ] as const satisfies readonly ScaleDisplayMode[];
+
+    for (const scaleDisplayMode of supportedModes) {
+      state().setScaleDisplayMode(scaleDisplayMode);
+
+      expect(state().scaleDisplayMode).toBe(scaleDisplayMode);
+    }
+
+    expect(() => {
+      state().setScaleDisplayMode('score' as ScaleDisplayMode);
+    }).toThrow(/Unsupported scale display mode "score"/);
   });
 
   it('recalculates theory for a tonic change and preserves the active progression step', () => {
@@ -270,6 +311,254 @@ describe('app state and selectors', () => {
     const tonicKeyWithoutChordLayer = keyByPitchClass(keyboardWithoutChordLayer.keys, 0);
 
     expect(tonicKeyWithoutChordLayer.highlightLayers).toEqual(['inScale', 'tonic']);
+  });
+
+  it('returns no score staff model for the strip display mode', () => {
+    expect(selectScoreStaffViewModel(state(), 'desktop')).toBeNull();
+  });
+
+  it('builds continuous C Major desktop improvisation slots split at middle C', () => {
+    state().setScaleDisplayMode('staffImprovisation');
+
+    const model = requireScoreStaffViewModel(selectScoreStaffViewModel(state(), 'desktop'));
+    const notes = scoreNotesBySlot(model);
+
+    expect(model).toMatchObject({
+      mode: 'staffImprovisation',
+      key: {
+        id: 'C Major'
+      },
+      keySignature: {
+        accidental: 'natural',
+        count: 0
+      },
+      slotCount: 21
+    });
+    expect(notes).toHaveLength(21);
+    expect(notes.map((note) => note.slotIndex)).toEqual(
+      Array.from({ length: 21 }, (_, index) => index)
+    );
+    expect(notes.map(noteToken)).toEqual([
+      'C3',
+      'D3',
+      'E3',
+      'F3',
+      'G3',
+      'A3',
+      'B3',
+      'C4',
+      'D4',
+      'E4',
+      'F4',
+      'G4',
+      'A4',
+      'B4',
+      'C5',
+      'D5',
+      'E5',
+      'F5',
+      'G5',
+      'A5',
+      'B5'
+    ]);
+    expect(notes.filter((note) => note.clef === 'bass').map(noteToken)).toEqual([
+      'C3',
+      'D3',
+      'E3',
+      'F3',
+      'G3',
+      'A3',
+      'B3'
+    ]);
+    expect(notes.filter((note) => note.clef === 'treble')[0]).toMatchObject({
+      noteName: 'C',
+      octave: 4,
+      slotIndex: 7
+    });
+  });
+
+  it('preserves signed key spelling and skips non-scale keys in improvisation slots', () => {
+    state().selectKey('F Major');
+    state().setScaleDisplayMode('staffImprovisation');
+
+    const model = requireScoreStaffViewModel(selectScoreStaffViewModel(state(), 'desktop'));
+    const notes = scoreNotesBySlot(model);
+    const scalePitchClasses = new Set<PhysicalPitchClass>([0, 2, 4, 5, 7, 9, 10]);
+
+    expect(model).toMatchObject({
+      key: {
+        id: 'F Major'
+      },
+      keySignature: {
+        accidental: 'flat',
+        count: 1,
+        notes: ['B']
+      },
+      slotCount: 21
+    });
+    expect(notes.map((note) => note.noteName)).toContain('Bb');
+    expect(notes.map((note) => note.noteName)).not.toContain('A#');
+    expect(notes.every((note) => scalePitchClasses.has(note.physicalPitchClass))).toBe(true);
+    expect(notes.map((note) => note.slotIndex)).toEqual(
+      Array.from({ length: 21 }, (_, index) => index)
+    );
+  });
+
+  it('gates improvisation active chord highlights with chordLayerEnabled', () => {
+    state().setScaleDisplayMode('staffImprovisation');
+
+    const withChordLayer = requireScoreStaffViewModel(selectScoreStaffViewModel(state(), 'desktop'));
+    const highlightedPitchClasses = new Set(
+      scoreNotes(withChordLayer)
+        .filter((note) => note.highlighted)
+        .map((note) => note.physicalPitchClass)
+    );
+
+    expect(scoreNotes(withChordLayer).filter((note) => note.highlighted)).toHaveLength(9);
+    expect(highlightedPitchClasses).toEqual(new Set([0, 4, 7]));
+
+    state().setChordLayerEnabled(false);
+
+    const withoutChordLayer = requireScoreStaffViewModel(
+      selectScoreStaffViewModel(state(), 'desktop')
+    );
+
+    expect(scoreNotes(withoutChordLayer).filter((note) => note.highlighted)).toHaveLength(0);
+  });
+
+  it('builds viewport-independent practice lines from the tonic nearest to C4', () => {
+    state().setScaleDisplayMode('staffPractice');
+
+    const desktopModel = requireScoreStaffViewModel(selectScoreStaffViewModel(state(), 'desktop'));
+    const mobileModel = requireScoreStaffViewModel(selectScoreStaffViewModel(state(), 'mobile'));
+    const [topLine, bottomLine] = desktopModel.lines;
+
+    expect(desktopModel).toMatchObject({
+      mode: 'staffPractice',
+      slotCount: 15
+    });
+    expect(topLine).toMatchObject({ clef: 'treble' });
+    expect(bottomLine).toMatchObject({ clef: 'bass' });
+    expect(topLine.notes.map(noteToken)).toEqual([
+      'C4',
+      'D4',
+      'E4',
+      'F4',
+      'G4',
+      'A4',
+      'B4',
+      'C5',
+      'D5',
+      'E5',
+      'F5',
+      'G5',
+      'A5',
+      'B5',
+      'C6'
+    ]);
+    expect(bottomLine.notes.map(noteToken)).toEqual([
+      'C4',
+      'B3',
+      'A3',
+      'G3',
+      'F3',
+      'E3',
+      'D3',
+      'C3',
+      'B2',
+      'A2',
+      'G2',
+      'F2',
+      'E2',
+      'D2',
+      'C2'
+    ]);
+    expect(topLine.notes.map((note) => note.slotIndex)).toEqual(
+      Array.from({ length: 15 }, (_, index) => index)
+    );
+    expect(bottomLine.notes.map((note) => note.slotIndex)).toEqual(
+      Array.from({ length: 15 }, (_, index) => index)
+    );
+    expect(mobileModel.lines.map((line) => line.notes.map(noteToken))).toEqual(
+      desktopModel.lines.map((line) => line.notes.map(noteToken))
+    );
+  });
+
+  it('chooses the lower tonic octave for a practice anchor tie around C4', () => {
+    state().selectKey('F# Major');
+    state().setScaleDisplayMode('staffPractice');
+
+    const model = requireScoreStaffViewModel(selectScoreStaffViewModel(state(), 'desktop'));
+    const [topLine, bottomLine] = model.lines;
+
+    expect(topLine.notes[0]).toMatchObject({
+      noteName: 'F#',
+      octave: 3
+    });
+    expect(topLine.notes[14]).toMatchObject({
+      noteName: 'F#',
+      octave: 5
+    });
+    expect(bottomLine.notes[0]).toMatchObject({
+      noteName: 'F#',
+      octave: 3
+    });
+    expect(bottomLine.notes[14]).toMatchObject({
+      noteName: 'F#',
+      octave: 1
+    });
+  });
+
+  it('adds practice fingering only when scale fingering is enabled', () => {
+    state().selectKey('F Major');
+    state().setScaleDisplayMode('staffPractice');
+    state().setScaleFingeringHand('left');
+    state().setScaleFingeringDirection('descending');
+
+    const disabledModel = requireScoreStaffViewModel(selectScoreStaffViewModel(state(), 'desktop'));
+
+    expect(scoreNotes(disabledModel).every((note) => note.finger === null)).toBe(true);
+
+    state().setScaleFingeringEnabled(true);
+
+    const enabledModel = requireScoreStaffViewModel(selectScoreStaffViewModel(state(), 'desktop'));
+    const [topLine, bottomLine] = enabledModel.lines;
+
+    expect(topLine.notes.map((note) => note.finger)).toEqual([
+      1,
+      2,
+      3,
+      4,
+      1,
+      2,
+      3,
+      1,
+      2,
+      3,
+      4,
+      1,
+      2,
+      3,
+      4
+    ]);
+    expect(bottomLine.notes.map((note) => note.finger)).toEqual([
+      1,
+      2,
+      3,
+      1,
+      2,
+      3,
+      4,
+      1,
+      2,
+      3,
+      1,
+      2,
+      3,
+      4,
+      5
+    ]);
+    expect(scoreNotes(enabledModel).some((note) => note.highlighted)).toBe(false);
   });
 
   it('switches note and degree labels for major and natural minor independently from visibility', () => {

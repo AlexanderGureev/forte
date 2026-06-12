@@ -278,6 +278,101 @@
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.45);
 }
 
+.hud-score-staff {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+  width: min(920px, calc(100vw - 20px));
+  max-width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px 10px;
+  background: var(--panel);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  pointer-events: auto;
+}
+
+/* На узких экранах партитура не сжимается, а скроллится по горизонтали */
+.hud-score-staff__scroll {
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.hud-score-staff__stage {
+  position: relative;
+}
+
+.hud-score-staff__renderer,
+.hud-score-staff__renderer > svg {
+  display: block;
+}
+
+.hud-score-staff__labels {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hud-score-staff__label {
+  position: absolute;
+  display: inline-grid;
+  justify-items: center;
+  transform: translateX(-50%);
+  color: var(--ink);
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1.05;
+  text-align: center;
+  text-shadow: 0 1px 7px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+
+.hud-score-staff__label[data-highlighted='true'] {
+  color: var(--gold);
+}
+
+.hud-score-staff__label-meta {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-dim);
+  font-size: 0.56rem;
+}
+
+.hud-score-staff__label[data-highlighted='true'] .hud-score-staff__label-meta {
+  color: #fbe3b4;
+}
+
+.hud-score-staff__label-finger {
+  display: inline-grid;
+  min-width: 13px;
+  height: 13px;
+  place-items: center;
+  border: 1px solid rgba(224, 170, 92, 0.54);
+  border-radius: 999px;
+  color: #211307;
+  font-size: 0.52rem;
+  font-weight: 900;
+  line-height: 1;
+  background: var(--gold);
+}
+
+.hud-score-staff__info {
+  margin-top: 2px;
+}
+
+.hud-scale-display-control {
+  max-width: 100%;
+}
+
+.hud-scale-display-control .primitive-segmented-control__options {
+  max-width: 100%;
+}
+
 .hud-top__controls {
   display: flex;
   grid-area: controls;
@@ -299,7 +394,7 @@
   z-index: 30;
   display: grid;
   gap: 14px;
-  width: 296px;
+  width: min(330px, calc(100vw - 24px));
   max-height: calc(100vh - 120px);
   padding: 14px;
   overflow-y: auto;
@@ -368,12 +463,13 @@
 }
 
 .hud-top .primitive-segmented-control__option {
-  min-width: 60px;
+  min-width: 56px;
   min-height: 26px;
   border-radius: 999px;
-  padding: 0 12px;
+  padding: 0 10px;
   font-size: 0.8rem;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 /* Узкие десктопы: прогрессия и панели компактнее, чтобы не наезжать на клавиатуру */
@@ -942,7 +1038,9 @@
   .hud-top .primitive-segmented-control__option,
   .sheet .primitive-segmented-control__option {
     width: auto;
-    min-width: 64px;
+    min-width: 56px;
+    padding: 0 10px;
+    font-size: 0.85rem;
   }
 
   .hud-progression__header {
@@ -970,6 +1068,11 @@
     max-width: calc(100vw - 32px);
     text-align: center;
     white-space: normal;
+  }
+
+  .hud-score-staff {
+    gap: 4px;
+    padding: 6px 7px;
   }
 }
 
@@ -1024,6 +1127,13 @@
 .sheet__view-controls {
   display: grid;
   gap: 10px;
+}
+
+.sheet__view-controls-group {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  min-width: 0;
 }
 
 .sheet__view-controls-row {

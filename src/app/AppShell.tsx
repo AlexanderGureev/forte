@@ -7,7 +7,8 @@ import { ProgressionHud } from '../ui/hud/ProgressionHud';
 import { RecommendedKeys } from '../ui/hud/RecommendedKeys';
 import { ScaleFingeringControl } from '../ui/hud/ScaleFingeringControl';
 import { ScaleStrip } from '../ui/hud/ScaleStrip';
-import { TopHud } from '../ui/hud/TopHud';
+import { ScoreStaff } from '../ui/hud/ScoreStaff';
+import { ScaleDisplayModeControl, TopHud } from '../ui/hud/TopHud';
 import {
   TheoryOverlay,
   usePrimitiveHotkeys,
@@ -21,6 +22,7 @@ import {
   selectColorLegend,
   selectKeyboardViewModel,
   selectRecommendedKeys,
+  selectScoreStaffViewModel,
   selectScaleSummary,
   selectTheoryOverlayModel
 } from '../state/selectors';
@@ -85,6 +87,7 @@ export function AppShell() {
   const recommendedKeys = selectRecommendedKeys(store);
   const colorLegend = selectColorLegend(store);
   const keyboardViewModel = selectKeyboardViewModel(store, viewport);
+  const scoreStaffModel = selectScoreStaffViewModel(store, viewport);
   const theoryOverlayModel = selectTheoryOverlayModel(store);
   const progressionPresets = getProgressionPresets(store.mode);
   const supportedKeys = getSupportedKeys().map((key) => ({
@@ -173,6 +176,8 @@ export function AppShell() {
           scaleSummary={scaleSummary}
           mode={store.mode}
           onSelectMode={store.selectMode}
+          scaleDisplayMode={store.scaleDisplayMode}
+          onSelectScaleDisplayMode={store.setScaleDisplayMode}
           labelMode={store.labelMode}
           onSelectLabelMode={store.setLabelMode}
           labelsVisible={store.labelsVisible}
@@ -240,11 +245,19 @@ export function AppShell() {
         </div>
 
         <div className="hud-bottom">
-          <ScaleStrip
-            scaleSummary={scaleSummary}
-            onOpenTheory={store.openTheoryOverlay}
-            className="hud-scale-strip--floating"
-          />
+          {store.scaleDisplayMode === 'strip' ? (
+            <ScaleStrip
+              scaleSummary={scaleSummary}
+              onOpenTheory={store.openTheoryOverlay}
+              className="hud-scale-strip--floating"
+            />
+          ) : scoreStaffModel === null ? null : (
+            <ScoreStaff
+              model={scoreStaffModel}
+              onOpenTheory={store.openTheoryOverlay}
+              className="hud-score-staff--floating"
+            />
+          )}
         </div>
 
         {!isWide ? (
@@ -318,6 +331,13 @@ export function AppShell() {
                   {makeKeysPanel()}
                   <section className="hud-panel sheet__view-controls" aria-label="Настройки вида">
                     <span className="hud-eyebrow">Вид</span>
+                    <div className="sheet__view-controls-group">
+                      <span className="hud-view-menu__label">Вид гаммы</span>
+                      <ScaleDisplayModeControl
+                        scaleDisplayMode={store.scaleDisplayMode}
+                        onSelectScaleDisplayMode={store.setScaleDisplayMode}
+                      />
+                    </div>
                     <div className="sheet__view-controls-row">
                       <button
                         className="hud-toggle"
@@ -337,6 +357,7 @@ export function AppShell() {
                         enabled={store.scaleFingeringEnabled}
                         hand={store.scaleFingeringHand}
                         direction={store.scaleFingeringDirection}
+                        handDirectionEnabled={store.scaleDisplayMode === 'strip'}
                         onToggleEnabled={store.toggleScaleFingering}
                         onSelectHand={store.setScaleFingeringHand}
                         onSelectDirection={store.setScaleFingeringDirection}

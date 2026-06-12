@@ -39,6 +39,10 @@ export type LabelMode = 'notes' | 'degrees';
 
 export type KeyboardViewport = 'desktop' | 'tablet' | 'mobile';
 
+export type ScaleDisplayMode = 'strip' | 'staffImprovisation' | 'staffPractice';
+
+export type StaffClef = 'treble' | 'bass';
+
 export type DegreeLabel = '1' | '2' | '3' | '4' | '5' | '6' | '7' | 'b3' | 'b6' | 'b7';
 
 export type PianoFinger = 1 | 2 | 3 | 4 | 5;
@@ -146,6 +150,32 @@ export interface Scale {
   readonly key: KeyDefinition;
   readonly formula: readonly ScaleFormulaStep[];
   readonly notes: readonly ScaleNote[];
+}
+
+export interface StaffNoteViewModel {
+  readonly id: string;
+  readonly noteName: NoteName;
+  readonly degree: ScaleDegree;
+  readonly degreeLabel: DegreeLabel;
+  readonly physicalPitchClass: PhysicalPitchClass;
+  readonly octave: number;
+  readonly clef: StaffClef;
+  readonly slotIndex: number;
+  readonly highlighted: boolean;
+  readonly finger: PianoFinger | null;
+}
+
+export interface StaffLineViewModel {
+  readonly clef: StaffClef;
+  readonly notes: readonly StaffNoteViewModel[];
+}
+
+export interface ScoreStaffViewModel {
+  readonly mode: Exclude<ScaleDisplayMode, 'strip'>;
+  readonly key: KeyDefinition;
+  readonly keySignature: KeySignature;
+  readonly slotCount: number;
+  readonly lines: readonly [StaffLineViewModel, StaffLineViewModel];
 }
 
 export interface ScaleFingeringStep {

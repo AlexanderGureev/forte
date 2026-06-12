@@ -6,6 +6,7 @@ import { getRelativeKey, materializeProgression } from '../music/progressions';
 import { buildScale } from '../music/scales';
 import {
   createKeyboardViewModel,
+  createScoreStaffViewModel,
   createTheoryOverlayModel,
   formatScaleDegreeLabel
 } from '../music/view-models';
@@ -27,6 +28,7 @@ import type {
   ScaleDegree,
   ScaleFingering,
   ScaleNote,
+  ScoreStaffViewModel,
   TheoryOverlayModel
 } from '../music/types';
 
@@ -258,6 +260,29 @@ export function selectKeyboardViewModel(
     labelMode: state.labelMode,
     labelsVisible: state.labelsVisible,
     viewport
+  });
+}
+
+export function selectScoreStaffViewModel(
+  state: AppState,
+  viewport: KeyboardViewport
+): ScoreStaffViewModel | null {
+  if (state.scaleDisplayMode === 'strip') {
+    return null;
+  }
+
+  const key = selectCurrentKey(state);
+  const scale = buildScale(key);
+  const activeChordStatus = selectActiveChordStatus(state);
+
+  return createScoreStaffViewModel({
+    mode: state.scaleDisplayMode,
+    key,
+    scale,
+    keyboard: selectKeyboardViewModel(state, viewport),
+    activeChord: activeChordStatus.chord,
+    chordLayerEnabled: state.chordLayerEnabled,
+    scaleFingeringEnabled: state.scaleFingeringEnabled
   });
 }
 
