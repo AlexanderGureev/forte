@@ -1,0 +1,63 @@
+:root {
+  --font-display: 'Fraunces Variable', Georgia, 'Times New Roman', serif;
+  --font-ui: 'Schibsted Grotesk Variable', 'Schibsted Grotesk', 'Avenir Next', sans-serif;
+
+  --ink: #f4eee2;
+  --ink-dim: #b4aa9c;
+  --ink-faint: #82796d;
+  --stage: #171219;
+  --panel: rgba(19, 14, 23, 0.76);
+  --panel-solid: #181220;
+  --line: rgba(244, 238, 226, 0.12);
+  --line-strong: rgba(244, 238, 226, 0.24);
+
+  --gold: #e0aa5c;
+  --gold-soft: rgba(224, 170, 92, 0.16);
+  --cyan: #59c8ff;
+  --coral: #ff7a55;
+  --plum: #9b87b8;
+
+  color: var(--ink);
+  background: var(--stage);
+  font-family: var(--font-ui);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+/* Единая типографика для UI-примитивов этапа 5 */
+#root .primitive-chord-card,
+#root .primitive-progression-card,
+#root .primitive-key-selector,
+#root .primitive-segmented-control,
+#root .primitive-theory-overlay {
+  font-family: var(--font-ui);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

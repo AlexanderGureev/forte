@@ -1,0 +1,408 @@
+.primitive-chord-card,
+.primitive-progression-card,
+.primitive-key-selector,
+.primitive-segmented-control,
+.primitive-theory-overlay {
+  color: #f7f4ef;
+  font-family:
+    "Aptos", "Avenir Next", "Trebuchet MS", "Noto Sans", "Segoe UI", sans-serif;
+}
+
+.primitive-chord-card,
+.primitive-progression-card,
+.primitive-key-selector {
+  border: 1px solid rgba(247, 244, 239, 0.14);
+  border-radius: 8px;
+  background: rgba(20, 22, 27, 0.88);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+}
+
+.primitive-chord-card {
+  display: grid;
+  grid-template-columns: minmax(32px, auto) 1fr minmax(0, auto);
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  min-height: 64px;
+  padding: 12px 14px;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.primitive-chord-card--selected {
+  border-color: rgba(228, 179, 99, 0.82);
+  background: rgba(45, 37, 28, 0.94);
+}
+
+.primitive-chord-card--in-progression:not(.primitive-chord-card--selected) {
+  border-color: rgba(87, 179, 163, 0.42);
+}
+
+.primitive-chord-card--tense {
+  border-style: dashed;
+}
+
+.primitive-chord-card__degree,
+.primitive-progression-card__step {
+  display: inline-grid;
+  min-width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid rgba(247, 244, 239, 0.16);
+  border-radius: 6px;
+  color: #e4b363;
+  font-weight: 800;
+}
+
+.primitive-chord-card__body,
+.primitive-progression-card__body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.primitive-chord-card__name,
+.primitive-progression-card__name {
+  overflow: hidden;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.primitive-chord-card__notes,
+.primitive-progression-card__degree {
+  color: #b7c7c3;
+  font-size: 0.82rem;
+}
+
+.primitive-chord-card__marker {
+  border: 1px solid rgba(221, 116, 91, 0.52);
+  border-radius: 999px;
+  padding: 3px 8px;
+  color: #ffb39f;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.primitive-progression-card {
+  display: grid;
+  gap: 10px;
+  min-width: 160px;
+  padding: 12px;
+}
+
+.primitive-progression-card--active {
+  border-color: rgba(228, 179, 99, 0.82);
+  background: rgba(43, 36, 29, 0.94);
+}
+
+.primitive-progression-card__button {
+  display: grid;
+  grid-template-columns: minmax(32px, auto) 1fr;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+  background: transparent;
+  cursor: pointer;
+}
+
+.primitive-progression-card__keyboard {
+  width: 100%;
+}
+
+.primitive-mini-keyboard {
+  width: 100%;
+  min-width: 132px;
+}
+
+.primitive-mini-keyboard__rail {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(10px, 1fr));
+  gap: 2px;
+  align-items: end;
+  height: 42px;
+}
+
+.primitive-mini-keyboard__key {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  height: 38px;
+  place-items: end center;
+  border: 1px solid rgba(247, 244, 239, 0.18);
+  border-radius: 4px;
+  padding-bottom: 4px;
+  background: #ece4d7;
+  color: #17191f;
+}
+
+.primitive-mini-keyboard__key--black {
+  height: 28px;
+  background: #15171d;
+  color: #f7f4ef;
+}
+
+.primitive-mini-keyboard__key--active {
+  border-color: #e4b363;
+  background: #e4b363;
+  color: #15171d;
+  box-shadow: 0 0 0 2px rgba(228, 179, 99, 0.16);
+}
+
+.primitive-mini-keyboard__label {
+  overflow: hidden;
+  max-width: 100%;
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.primitive-key-selector {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.primitive-key-selector__header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.primitive-key-selector__title,
+.primitive-segmented-control__label {
+  color: #f7f4ef;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.primitive-key-selector__select-label {
+  color: #9aa5ad;
+  font-size: 0.78rem;
+}
+
+.primitive-key-selector__recommended {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.primitive-key-selector__recommended-key,
+.primitive-segmented-control__option,
+.primitive-theory-overlay__close {
+  border: 1px solid rgba(247, 244, 239, 0.16);
+  border-radius: 7px;
+  color: #f7f4ef;
+  background: rgba(247, 244, 239, 0.06);
+  cursor: pointer;
+}
+
+.primitive-key-selector__recommended-key {
+  display: inline-grid;
+  gap: 2px;
+  min-width: 92px;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.primitive-key-selector__recommended-key--selected,
+.primitive-segmented-control__option--selected {
+  border-color: rgba(228, 179, 99, 0.78);
+  color: #15171d;
+  background: #e4b363;
+}
+
+.primitive-key-selector__same-mode {
+  color: inherit;
+  font-size: 0.68rem;
+  opacity: 0.72;
+}
+
+.primitive-key-selector__select {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid rgba(247, 244, 239, 0.18);
+  border-radius: 7px;
+  padding: 0 36px 0 10px;
+  color: #f7f4ef;
+  appearance: none;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23b4aa9c' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    right 14px center / 12px 8px no-repeat
+    #15171d;
+}
+
+.primitive-segmented-control {
+  display: inline-grid;
+  gap: 8px;
+}
+
+.primitive-segmented-control__options {
+  display: inline-grid;
+  grid-auto-flow: column;
+  gap: 4px;
+  width: fit-content;
+  border: 1px solid rgba(247, 244, 239, 0.14);
+  border-radius: 8px;
+  padding: 4px;
+  background: rgba(20, 22, 27, 0.82);
+}
+
+.primitive-segmented-control__option {
+  min-width: 72px;
+  min-height: 34px;
+  padding: 0 12px;
+  font-weight: 800;
+}
+
+.primitive-theory-overlay {
+  display: grid;
+  gap: 18px;
+  width: min(100%, 760px);
+  max-height: min(84vh, 780px);
+  overflow: auto;
+  border: 1px solid rgba(247, 244, 239, 0.16);
+  border-radius: 8px;
+  padding: 18px;
+  background: rgba(17, 19, 24, 0.96);
+  box-shadow: 0 24px 90px rgba(0, 0, 0, 0.42);
+}
+
+.primitive-theory-overlay__header {
+  display: flex;
+  gap: 16px;
+  align-items: start;
+  justify-content: space-between;
+}
+
+.primitive-theory-overlay__eyebrow,
+.primitive-theory-overlay__context {
+  margin: 0;
+  color: #e4b363;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.primitive-theory-overlay__eyebrow {
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.primitive-theory-overlay__context {
+  color: #9aa5ad;
+  font-weight: 600;
+}
+
+.primitive-theory-overlay__title {
+  margin: 2px 0 4px;
+  font-size: 1.45rem;
+  line-height: 1.12;
+}
+
+.primitive-theory-overlay__close {
+  min-height: 36px;
+  padding: 0 12px;
+}
+
+.primitive-theory-overlay__sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.primitive-theory-overlay__section {
+  border: 1px solid rgba(247, 244, 239, 0.12);
+  border-radius: 8px;
+  padding: 12px;
+  background: rgba(247, 244, 239, 0.045);
+}
+
+.primitive-theory-overlay__section--highlighted {
+  border-color: rgba(228, 179, 99, 0.78);
+  background: rgba(228, 179, 99, 0.1);
+}
+
+.primitive-theory-overlay__section-title {
+  margin: 0 0 10px;
+  color: #e4b363;
+  font-size: 0.92rem;
+}
+
+.primitive-theory-overlay__rows {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.primitive-theory-overlay__row {
+  display: grid;
+  grid-template-columns: 118px 1fr;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.primitive-theory-overlay__row dt {
+  color: #9aa5ad;
+  font-size: 0.84rem;
+}
+
+.primitive-theory-overlay__row dd {
+  margin: 0;
+  color: #f7f4ef;
+  font-weight: 700;
+}
+
+.primitive-theory-overlay__items {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 18px;
+  color: #d8dde1;
+}
+
+.primitive-chord-card:focus-visible,
+.primitive-progression-card__button:focus-visible,
+.primitive-key-selector__recommended-key:focus-visible,
+.primitive-key-selector__select:focus-visible,
+.primitive-segmented-control__option:focus-visible,
+.primitive-theory-overlay__close:focus-visible {
+  outline: 2px solid #57b3a3;
+  outline-offset: 3px;
+}
+
+.primitive-chord-card:disabled,
+.primitive-progression-card__button:disabled,
+.primitive-key-selector__recommended-key:disabled,
+.primitive-key-selector__select:disabled,
+.primitive-segmented-control__option:disabled,
+.primitive-theory-overlay__close:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+@media (max-width: 520px) {
+  .primitive-theory-overlay__header {
+    display: grid;
+  }
+
+  .primitive-segmented-control__options {
+    grid-auto-flow: row;
+    width: 100%;
+  }
+
+  .primitive-segmented-control__option {
+    width: 100%;
+  }
+}
