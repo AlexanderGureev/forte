@@ -73,7 +73,6 @@ describe('app state persistence', () => {
     state().setScaleDisplayMode('staffPractice');
     state().setLabelMode('degrees');
     state().setLabelsVisible(false);
-    state().setDimOutOfScale(true);
     state().setCameraZoom(1.2);
     state().toggleFocusMode();
     state().openTheoryOverlay('progression');
@@ -96,7 +95,6 @@ describe('app state persistence', () => {
       scaleDisplayMode: 'staffPractice',
       labelMode: 'degrees',
       labelsVisible: false,
-      dimOutOfScale: true,
       cameraZoom: 1.2
     });
     expect(persistedState).not.toHaveProperty('focusMode');
@@ -119,7 +117,6 @@ describe('app state persistence', () => {
       scaleDisplayMode: 'staffImprovisation',
       labelMode: 'degrees',
       labelsVisible: false,
-      dimOutOfScale: true,
       cameraZoom: 1.15,
       focusMode: true,
       theoryOverlay: {
@@ -151,7 +148,6 @@ describe('app state persistence', () => {
       scaleDisplayMode: 'staffImprovisation',
       labelMode: 'degrees',
       labelsVisible: false,
-      dimOutOfScale: true,
       cameraZoom: 1.15,
       focusMode: false,
       theoryOverlay: {
@@ -183,7 +179,6 @@ describe('app state persistence', () => {
       scaleDisplayMode: 'score',
       labelMode: 'names',
       labelsVisible: false,
-      dimOutOfScale: 'yes',
       cameraZoom: 'wide'
     });
 
@@ -203,7 +198,6 @@ describe('app state persistence', () => {
       scaleDisplayMode: 'strip',
       labelMode: 'notes',
       labelsVisible: false,
-      dimOutOfScale: false,
       cameraZoom: DEFAULT_CAMERA_ZOOM
     });
   });

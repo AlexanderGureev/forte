@@ -181,7 +181,6 @@ export function AppShell() {
           viewModel={keyboardViewModel}
           chordRootPitchClass={activeChordStatus.chord.notes[0].physicalPitchClass}
           chordEchoEnabled={store.chordEchoEnabled}
-          dimOutOfScale={store.dimOutOfScale}
           cameraZoom={store.cameraZoom}
           motionEnabled={uiConfig.decorativeMotionEnabled}
           hudSidePx={hudSidePx}
@@ -226,8 +225,6 @@ export function AppShell() {
               labelMode={store.labelMode}
               onToggleLabels={store.toggleLabelsVisible}
               onSelectLabelMode={store.setLabelMode}
-              dimOutOfScale={store.dimOutOfScale}
-              onToggleDimOutOfScale={store.toggleDimOutOfScale}
               cameraZoom={store.cameraZoom}
               onChangeCameraZoom={store.setCameraZoom}
               onResetCameraZoom={store.resetCameraZoom}
@@ -398,14 +395,6 @@ export function AppShell() {
                         onClick={store.toggleChordEcho}
                       >
                         Дубли аккорда
-                      </button>
-                      <button
-                        className="hud-toggle"
-                        type="button"
-                        aria-pressed={store.dimOutOfScale}
-                        onClick={store.toggleDimOutOfScale}
-                      >
-                        Приглушить вне гаммы
                       </button>
                       <LabelModeControl
                         labelsVisible={store.labelsVisible}

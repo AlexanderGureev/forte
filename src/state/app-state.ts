@@ -48,7 +48,6 @@ export interface AppState {
   readonly scaleDisplayMode: ScaleDisplayMode;
   readonly labelMode: LabelMode;
   readonly labelsVisible: boolean;
-  readonly dimOutOfScale: boolean;
   readonly cameraZoom: number;
   readonly focusMode: boolean;
   readonly theoryOverlay: TheoryOverlayState;
@@ -73,8 +72,6 @@ export interface AppActions {
   readonly setLabelMode: (labelMode: LabelMode) => void;
   readonly setLabelsVisible: (visible: boolean) => void;
   readonly toggleLabelsVisible: () => void;
-  readonly setDimOutOfScale: (enabled: boolean) => void;
-  readonly toggleDimOutOfScale: () => void;
   readonly setCameraZoom: (cameraZoom: number) => void;
   readonly resetCameraZoom: () => void;
   readonly setFocusMode: (enabled: boolean) => void;
@@ -120,7 +117,6 @@ type PersistedAppSettings = Pick<
   | 'scaleDisplayMode'
   | 'labelMode'
   | 'labelsVisible'
-  | 'dimOutOfScale'
   | 'cameraZoom'
 >;
 
@@ -164,7 +160,6 @@ export function createInitialAppState(): AppState {
     scaleDisplayMode: 'strip',
     labelMode: 'notes',
     labelsVisible: true,
-    dimOutOfScale: false,
     cameraZoom: DEFAULT_CAMERA_ZOOM,
     focusMode: false,
     theoryOverlay: {
@@ -314,14 +309,6 @@ const createAppStore = (set: Parameters<StateCreator<AppStore>>[0]): AppStore =>
 
   toggleLabelsVisible: () => {
     set((state) => ({ labelsVisible: !state.labelsVisible }));
-  },
-
-  setDimOutOfScale: (enabled) => {
-    set({ dimOutOfScale: enabled });
-  },
-
-  toggleDimOutOfScale: () => {
-    set((state) => ({ dimOutOfScale: !state.dimOutOfScale }));
   },
 
   setCameraZoom: (cameraZoom) => {
@@ -551,7 +538,6 @@ function selectPersistedAppSettings(state: AppStore): PersistedAppSettings {
     scaleDisplayMode: state.scaleDisplayMode,
     labelMode: state.labelMode,
     labelsVisible: state.labelsVisible,
-    dimOutOfScale: state.dimOutOfScale,
     cameraZoom: state.cameraZoom
   };
 }
@@ -619,7 +605,6 @@ function mergePersistedAppSettings(
       ? persistedState.labelMode
       : currentState.labelMode,
     labelsVisible: readPersistedBoolean(persistedState.labelsVisible, currentState.labelsVisible),
-    dimOutOfScale: readPersistedBoolean(persistedState.dimOutOfScale, currentState.dimOutOfScale),
     cameraZoom:
       typeof persistedState.cameraZoom === 'number'
         ? normalizeCameraZoom(persistedState.cameraZoom)

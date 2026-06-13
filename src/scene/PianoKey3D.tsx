@@ -27,8 +27,6 @@ export interface PianoKey3DProps {
   readonly keyModel: KeyboardKeyViewModel;
   readonly placement: KeyPlacement;
   readonly motionEnabled: boolean;
-  /** Приглушать клавиши вне тональности, чтобы ноты гаммы читались легче. */
-  readonly dimOutOfScale: boolean;
   readonly chordEmphasis: ChordKeyEmphasis | null;
   readonly onSelect: (key: KeyboardKeyViewModel) => void;
 }
@@ -57,17 +55,11 @@ const HOVER_GLOW = new Color("#ffe7bd");
 const PRESS_DEPTH = 0.07;
 const MIDI_GLOW_INTENSITY = 0.64;
 const SCALE_KEY_COLOR_MIX = { white: 0.1, black: 0 } as const;
-// Клавиши вне тональности уводим в холодный темный тон и делаем прозрачнее,
-// чтобы они отступали на задний план и не конкурировали с нотами гаммы.
-const MUTED_KEY_TINT = { white: "#565a64", black: "#050507" } as const;
-const MUTED_KEY_COLOR_MIX = { white: 0.52, black: 0.6 } as const;
-const MUTED_KEY_OPACITY = { white: 0.72, black: 0.9 } as const;
 
 export function PianoKey3D({
   keyModel,
   placement,
   motionEnabled,
-  dimOutOfScale,
   chordEmphasis,
   onSelect,
 }: PianoKey3DProps) {
@@ -83,12 +75,6 @@ export function PianoKey3D({
   const midiPressed = keyModel.highlightLayers.includes("midiPressed");
   const keyPressed = pressed || midiPressed;
   const chordMaterialEmphasis = midiPressed ? null : chordEmphasis;
-  const mutedNonScale =
-    dimOutOfScale &&
-    !inScale &&
-    !hovered &&
-    !midiPressed &&
-    chordMaterialEmphasis === null;
 
   const width = isWhite ? WHITE_KEY_WIDTH : BLACK_KEY_WIDTH;
   const height = isWhite ? WHITE_KEY_HEIGHT : BLACK_KEY_HEIGHT;
@@ -126,27 +112,10 @@ export function PianoKey3D({
               isWhite ? 0.34 : 0.45,
             )
             .getHexString()}`
-        : getIdleKeyColor(baseColor, isWhite, inScale, mutedNonScale);
-  const materialRoughness = mutedNonScale
-    ? isWhite
-      ? 0.74
-      : 0.56
-    : isWhite
-      ? 0.46
-      : 0.3;
-  const materialClearcoat = mutedNonScale
-    ? isWhite
-      ? 0.08
-      : 0.24
-    : isWhite
-      ? 0.35
-      : 1;
-  const materialClearcoatRoughness = mutedNonScale
-    ? 0.72
-    : isWhite
-      ? 0.3
-      : 0.12;
-  const materialOpacity = mutedNonScale ? getMutedKeyOpacity(isWhite) : 1;
+        : getIdleKeyColor(baseColor, isWhite, inScale);
+  const materialRoughness = isWhite ? 0.46 : 0.3;
+  const materialClearcoat = isWhite ? 0.35 : 1;
+  const materialClearcoatRoughness = isWhite ? 0.3 : 0.12;
 
   useFrame((state) => {
     const material = keyMaterialRef.current;
@@ -199,7 +168,7 @@ export function PianoKey3D({
       >
         <meshPhysicalMaterial
           ref={keyMaterialRef}
-          map={isWhite && !mutedNonScale ? getIvoryTexture() : null}
+          map={isWhite ? getIvoryTexture() : null}
           color={keyColor}
           roughness={materialRoughness}
           metalness={0.02}
@@ -211,8 +180,6 @@ export function PianoKey3D({
               : HOVER_GLOW
           }
           emissiveIntensity={0}
-          transparent={mutedNonScale}
-          opacity={materialOpacity}
         />
       </RoundedBox>
 
@@ -276,12 +243,7 @@ export function PianoKey3D({
           rotation={[-Math.PI / 2, 0, 0]}
           font={keyLabelFontUrl}
           fontSize={isWhite ? 0.32 : 0.24}
-          color={getLabelColor(
-            isWhite,
-            chordMaterialEmphasis,
-            midiPressed,
-            mutedNonScale,
-          )}
+          color={getLabelColor(isWhite, chordMaterialEmphasis, midiPressed)}
           anchorX="center"
           anchorY="middle"
         >
@@ -352,29 +314,16 @@ function getIdleKeyColor(
   baseColor: string,
   isWhite: boolean,
   inScale: boolean,
-  muted: boolean,
 ): string {
-  const surface = isWhite ? "white" : "black";
-
-  if (inScale) {
-    return `#${new Color(baseColor)
-      .lerp(new Color(HIGHLIGHT_COLORS.inScale), SCALE_KEY_COLOR_MIX[surface])
-      .getHexString()}`;
-  }
-
-  if (!muted) {
+  if (!inScale) {
     return baseColor;
   }
 
-  return `#${new Color(baseColor)
-    .lerp(new Color(MUTED_KEY_TINT[surface]), MUTED_KEY_COLOR_MIX[surface])
-    .getHexString()}`;
-}
-
-function getMutedKeyOpacity(isWhite: boolean): number {
   const surface = isWhite ? "white" : "black";
 
-  return MUTED_KEY_OPACITY[surface];
+  return `#${new Color(baseColor)
+    .lerp(new Color(HIGHLIGHT_COLORS.inScale), SCALE_KEY_COLOR_MIX[surface])
+    .getHexString()}`;
 }
 
 /** На золотой подсветке аккорда читается только темная подпись — особенно на черных клавишах. */
@@ -382,7 +331,6 @@ function getLabelColor(
   isWhite: boolean,
   chordEmphasis: ChordKeyEmphasis | null,
   midiPressed: boolean,
-  muted: boolean,
 ): string {
   if (midiPressed) {
     return "#092636";
@@ -390,10 +338,6 @@ function getLabelColor(
 
   if (chordEmphasis === "root" || chordEmphasis === "primary") {
     return "#2a1c0c";
-  }
-
-  if (muted) {
-    return isWhite ? "#6f6a61" : "#6c675d";
   }
 
   return isWhite ? "#3f392d" : "#d9d2c2";

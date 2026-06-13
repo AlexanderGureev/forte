@@ -122,8 +122,6 @@ export interface HudActionsProps {
   readonly labelMode: LabelMode;
   readonly onToggleLabels: () => void;
   readonly onSelectLabelMode: (labelMode: LabelMode) => void;
-  readonly dimOutOfScale: boolean;
-  readonly onToggleDimOutOfScale: () => void;
   readonly cameraZoom: number;
   readonly onChangeCameraZoom: (cameraZoom: number) => void;
   readonly onResetCameraZoom: () => void;
@@ -153,8 +151,6 @@ export function HudActions({
   labelMode,
   onToggleLabels,
   onSelectLabelMode,
-  dimOutOfScale,
-  onToggleDimOutOfScale,
   cameraZoom,
   onChangeCameraZoom,
   onResetCameraZoom,
@@ -184,8 +180,6 @@ export function HudActions({
           labelMode={labelMode}
           onToggleLabels={onToggleLabels}
           onSelectLabelMode={onSelectLabelMode}
-          dimOutOfScale={dimOutOfScale}
-          onToggleDimOutOfScale={onToggleDimOutOfScale}
           cameraZoom={cameraZoom}
           onChangeCameraZoom={onChangeCameraZoom}
           onResetCameraZoom={onResetCameraZoom}
@@ -354,8 +348,6 @@ interface ViewMenuProps {
   readonly labelMode: LabelMode;
   readonly onToggleLabels: () => void;
   readonly onSelectLabelMode: (labelMode: LabelMode) => void;
-  readonly dimOutOfScale: boolean;
-  readonly onToggleDimOutOfScale: () => void;
   readonly cameraZoom: number;
   readonly onChangeCameraZoom: (cameraZoom: number) => void;
   readonly onResetCameraZoom: () => void;
@@ -381,8 +373,6 @@ function ViewMenu({
   labelMode,
   onToggleLabels,
   onSelectLabelMode,
-  dimOutOfScale,
-  onToggleDimOutOfScale,
   cameraZoom,
   onChangeCameraZoom,
   onResetCameraZoom,
@@ -477,19 +467,6 @@ function ViewMenu({
                 onClick={onToggleChordEcho}
               >
                 Дубли аккорда
-              </button>
-            </div>
-          </div>
-          <div className="hud-view-menu__row">
-            <span className="hud-view-menu__label">Клавиши вне гаммы</span>
-            <div className="hud-view-menu__toggle-row">
-              <button
-                className="hud-toggle"
-                type="button"
-                aria-pressed={dimOutOfScale}
-                onClick={onToggleDimOutOfScale}
-              >
-                Приглушить
               </button>
             </div>
           </div>
