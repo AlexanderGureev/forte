@@ -20,6 +20,7 @@ export interface PianoStudioSceneProps {
   readonly chordEchoEnabled: boolean;
   readonly cameraZoom: number;
   readonly motionEnabled: boolean;
+  readonly dimOutOfScale: boolean;
   /** Фактическая ширина, занятая боковыми панелями HUD (px). */
   readonly hudSidePx?: number;
   readonly onSelectKey: (key: KeyboardKeyViewModel) => void;
@@ -31,6 +32,7 @@ export function PianoStudioScene({
   chordEchoEnabled,
   cameraZoom,
   motionEnabled,
+  dimOutOfScale,
   hudSidePx,
   onSelectKey
 }: PianoStudioSceneProps) {
@@ -87,6 +89,7 @@ export function PianoStudioScene({
         chordRootPitchClass={chordRootPitchClass}
         chordEchoEnabled={chordEchoEnabled}
         motionEnabled={motionEnabled}
+        dimOutOfScale={dimOutOfScale}
         onSelectKey={onSelectKey}
       />
 

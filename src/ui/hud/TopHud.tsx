@@ -125,6 +125,8 @@ export interface HudActionsProps {
   readonly cameraZoom: number;
   readonly onChangeCameraZoom: (cameraZoom: number) => void;
   readonly onResetCameraZoom: () => void;
+  readonly dimOutOfScaleKeys: boolean;
+  readonly onToggleDimOutOfScaleKeys: () => void;
   readonly midiPanel: MidiPanelProps;
   readonly colorLegend: readonly ColorLegendItem[];
   readonly onOpenTheory: (target: TheoryOverlayContextTarget) => void;
@@ -154,6 +156,8 @@ export function HudActions({
   cameraZoom,
   onChangeCameraZoom,
   onResetCameraZoom,
+  dimOutOfScaleKeys,
+  onToggleDimOutOfScaleKeys,
   midiPanel,
   colorLegend,
   onOpenTheory,
@@ -183,6 +187,8 @@ export function HudActions({
           cameraZoom={cameraZoom}
           onChangeCameraZoom={onChangeCameraZoom}
           onResetCameraZoom={onResetCameraZoom}
+          dimOutOfScaleKeys={dimOutOfScaleKeys}
+          onToggleDimOutOfScaleKeys={onToggleDimOutOfScaleKeys}
           colorLegend={colorLegend}
           onOpenTheory={onOpenTheory}
         />
@@ -351,6 +357,8 @@ interface ViewMenuProps {
   readonly cameraZoom: number;
   readonly onChangeCameraZoom: (cameraZoom: number) => void;
   readonly onResetCameraZoom: () => void;
+  readonly dimOutOfScaleKeys: boolean;
+  readonly onToggleDimOutOfScaleKeys: () => void;
   readonly colorLegend: readonly ColorLegendItem[];
   readonly onOpenTheory: (target: TheoryOverlayContextTarget) => void;
 }
@@ -376,6 +384,8 @@ function ViewMenu({
   cameraZoom,
   onChangeCameraZoom,
   onResetCameraZoom,
+  dimOutOfScaleKeys,
+  onToggleDimOutOfScaleKeys,
   colorLegend,
   onOpenTheory
 }: ViewMenuProps) {
@@ -440,6 +450,17 @@ function ViewMenu({
               scaleDisplayMode={scaleDisplayMode}
               onSelectScaleDisplayMode={onSelectScaleDisplayMode}
             />
+          </div>
+          <div className="hud-view-menu__row">
+            <span className="hud-view-menu__label">Клавиши вне тональности</span>
+            <button
+              className="hud-toggle"
+              type="button"
+              aria-pressed={dimOutOfScaleKeys}
+              onClick={onToggleDimOutOfScaleKeys}
+            >
+              Приглушать
+            </button>
           </div>
           <div className="hud-view-menu__row">
             <span className="hud-view-menu__label">Камера</span>

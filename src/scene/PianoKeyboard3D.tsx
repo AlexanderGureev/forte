@@ -11,6 +11,7 @@ export interface PianoKeyboard3DProps {
   readonly chordRootPitchClass: PhysicalPitchClass | null;
   readonly chordEchoEnabled: boolean;
   readonly motionEnabled: boolean;
+  readonly dimOutOfScale: boolean;
   readonly onSelectKey: (key: KeyboardKeyViewModel) => void;
 }
 
@@ -19,6 +20,7 @@ export function PianoKeyboard3D({
   chordRootPitchClass,
   chordEchoEnabled,
   motionEnabled,
+  dimOutOfScale,
   onSelectKey
 }: PianoKeyboard3DProps) {
   const keyboardWidth = getKeyboardWidth(viewModel.octaveCount);
@@ -41,6 +43,7 @@ export function PianoKeyboard3D({
           placement={getKeyPlacement(key, viewModel)}
           motionEnabled={motionEnabled}
           chordEmphasis={chordEmphasisByKeyId.get(key.id) ?? null}
+          dimOutOfScale={dimOutOfScale}
           onSelect={onSelectKey}
         />
       ))}

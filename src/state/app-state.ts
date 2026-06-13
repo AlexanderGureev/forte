@@ -50,6 +50,7 @@ export interface AppState {
   readonly labelsVisible: boolean;
   readonly cameraZoom: number;
   readonly focusMode: boolean;
+  readonly dimOutOfScaleKeys: boolean;
   readonly theoryOverlay: TheoryOverlayState;
   readonly midi: MidiRuntimeState;
 }
@@ -76,6 +77,8 @@ export interface AppActions {
   readonly resetCameraZoom: () => void;
   readonly setFocusMode: (enabled: boolean) => void;
   readonly toggleFocusMode: () => void;
+  readonly setDimOutOfScaleKeys: (enabled: boolean) => void;
+  readonly toggleDimOutOfScaleKeys: () => void;
   readonly openTheoryOverlay: (contextTarget: TheoryOverlayContextTarget) => void;
   readonly closeTheoryOverlay: () => void;
   readonly setMidiRequesting: () => void;
@@ -118,6 +121,7 @@ type PersistedAppSettings = Pick<
   | 'labelMode'
   | 'labelsVisible'
   | 'cameraZoom'
+  | 'dimOutOfScaleKeys'
 >;
 
 const SCALE_DEGREES = [1, 2, 3, 4, 5, 6, 7] as const satisfies readonly ScaleDegree[];
@@ -162,6 +166,7 @@ export function createInitialAppState(): AppState {
     labelsVisible: true,
     cameraZoom: DEFAULT_CAMERA_ZOOM,
     focusMode: false,
+    dimOutOfScaleKeys: false,
     theoryOverlay: {
       isOpen: false,
       contextTarget: null
@@ -325,6 +330,14 @@ const createAppStore = (set: Parameters<StateCreator<AppStore>>[0]): AppStore =>
 
   toggleFocusMode: () => {
     set((state) => ({ focusMode: !state.focusMode }));
+  },
+
+  setDimOutOfScaleKeys: (enabled) => {
+    set({ dimOutOfScaleKeys: enabled });
+  },
+
+  toggleDimOutOfScaleKeys: () => {
+    set((state) => ({ dimOutOfScaleKeys: !state.dimOutOfScaleKeys }));
   },
 
   openTheoryOverlay: (contextTarget) => {
@@ -538,7 +551,8 @@ function selectPersistedAppSettings(state: AppStore): PersistedAppSettings {
     scaleDisplayMode: state.scaleDisplayMode,
     labelMode: state.labelMode,
     labelsVisible: state.labelsVisible,
-    cameraZoom: state.cameraZoom
+    cameraZoom: state.cameraZoom,
+    dimOutOfScaleKeys: state.dimOutOfScaleKeys
   };
 }
 
@@ -608,7 +622,11 @@ function mergePersistedAppSettings(
     cameraZoom:
       typeof persistedState.cameraZoom === 'number'
         ? normalizeCameraZoom(persistedState.cameraZoom)
-        : currentState.cameraZoom
+        : currentState.cameraZoom,
+    dimOutOfScaleKeys: readPersistedBoolean(
+      persistedState.dimOutOfScaleKeys,
+      currentState.dimOutOfScaleKeys
+    )
   };
 }
 

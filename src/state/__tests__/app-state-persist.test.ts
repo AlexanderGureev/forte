@@ -75,6 +75,7 @@ describe('app state persistence', () => {
     state().setLabelsVisible(false);
     state().setCameraZoom(1.2);
     state().toggleFocusMode();
+    state().setDimOutOfScaleKeys(true);
     state().openTheoryOverlay('progression');
     state().setMidiConnected(inputOne.id, [inputOne]);
     state().pressMidiNote(createMidiPressedNote({ midiNoteNumber: 60, velocity: 96 }));
@@ -95,7 +96,8 @@ describe('app state persistence', () => {
       scaleDisplayMode: 'staffPractice',
       labelMode: 'degrees',
       labelsVisible: false,
-      cameraZoom: 1.2
+      cameraZoom: 1.2,
+      dimOutOfScaleKeys: true
     });
     expect(persistedState).not.toHaveProperty('focusMode');
     expect(persistedState).not.toHaveProperty('theoryOverlay');
@@ -118,6 +120,7 @@ describe('app state persistence', () => {
       labelMode: 'degrees',
       labelsVisible: false,
       cameraZoom: 1.15,
+      dimOutOfScaleKeys: true,
       focusMode: true,
       theoryOverlay: {
         isOpen: true,
@@ -149,6 +152,7 @@ describe('app state persistence', () => {
       labelMode: 'degrees',
       labelsVisible: false,
       cameraZoom: 1.15,
+      dimOutOfScaleKeys: true,
       focusMode: false,
       theoryOverlay: {
         isOpen: false,

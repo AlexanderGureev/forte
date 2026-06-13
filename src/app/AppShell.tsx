@@ -183,6 +183,7 @@ export function AppShell() {
           chordEchoEnabled={store.chordEchoEnabled}
           cameraZoom={store.cameraZoom}
           motionEnabled={uiConfig.decorativeMotionEnabled}
+          dimOutOfScale={store.dimOutOfScaleKeys}
           hudSidePx={hudSidePx}
           onSelectKey={handleSelectKey3D}
         />
@@ -228,6 +229,8 @@ export function AppShell() {
               cameraZoom={store.cameraZoom}
               onChangeCameraZoom={store.setCameraZoom}
               onResetCameraZoom={store.resetCameraZoom}
+              dimOutOfScaleKeys={store.dimOutOfScaleKeys}
+              onToggleDimOutOfScaleKeys={store.toggleDimOutOfScaleKeys}
               midiPanel={midiPanelProps}
               colorLegend={colorLegend}
               onOpenTheory={store.openTheoryOverlay}
@@ -395,6 +398,14 @@ export function AppShell() {
                         onClick={store.toggleChordEcho}
                       >
                         Дубли аккорда
+                      </button>
+                      <button
+                        className="hud-toggle"
+                        type="button"
+                        aria-pressed={store.dimOutOfScaleKeys}
+                        onClick={store.toggleDimOutOfScaleKeys}
+                      >
+                        Приглушать вне тональности
                       </button>
                       <LabelModeControl
                         labelsVisible={store.labelsVisible}

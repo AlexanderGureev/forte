@@ -28,6 +28,7 @@ export interface PianoKey3DProps {
   readonly placement: KeyPlacement;
   readonly motionEnabled: boolean;
   readonly chordEmphasis: ChordKeyEmphasis | null;
+  readonly dimOutOfScale: boolean;
   readonly onSelect: (key: KeyboardKeyViewModel) => void;
 }
 
@@ -54,13 +55,27 @@ const CHORD_COLOR_MIX: Record<
 const HOVER_GLOW = new Color("#ffe7bd");
 const PRESS_DEPTH = 0.07;
 const MIDI_GLOW_INTENSITY = 0.64;
-const SCALE_KEY_COLOR_MIX = { white: 0.1, black: 0 } as const;
+// Контраст создаём не подсветкой гаммы, а приглушением клавиш ВНЕ тональности:
+// ноты гаммы остаются натуральными и глянцевыми, а остальные затемняются и
+// становятся матовыми, уходя на второй план. Так эффект виден в любой тональности,
+// включая C major, где вне гаммы только чёрные клавиши.
+const OFF_SCALE_WHITE = "#0a0c11";
+const OFF_SCALE_WHITE_MIX = 0.9;
+const OFF_SCALE_BLACK = "#000000";
+const OFF_SCALE_BLACK_MIX = 0.6;
+// Клавиши вне тональности делаем полупрозрачными — они просвечивают тёмную сцену
+// и становятся еле заметными, не перетягивая внимание с гаммы. Чёрные просвечивают
+// светлые клавиши позади и кажутся заметнее, поэтому тёмным белым даём чуть больше
+// непрозрачности, чтобы их видимость сравнялась.
+const OFF_SCALE_WHITE_OPACITY = 0.45;
+const OFF_SCALE_BLACK_OPACITY = 0.28;
 
 export function PianoKey3D({
   keyModel,
   placement,
   motionEnabled,
   chordEmphasis,
+  dimOutOfScale,
   onSelect,
 }: PianoKey3DProps) {
   const keyMaterialRef = useRef<MeshPhysicalMaterial>(null);
@@ -70,6 +85,8 @@ export function PianoKey3D({
 
   const isWhite = keyModel.isWhiteKey;
   const inScale = keyModel.highlightLayers.includes("inScale");
+  // Приглушение клавиш вне тональности — опциональный режим (меню «Вид»).
+  const muted = dimOutOfScale && !inScale;
   const isTonic = keyModel.highlightLayers.includes("tonic");
   const isDiminished = keyModel.highlightLayers.includes("diminished");
   const midiPressed = keyModel.highlightLayers.includes("midiPressed");
@@ -112,9 +129,11 @@ export function PianoKey3D({
               isWhite ? 0.34 : 0.45,
             )
             .getHexString()}`
-        : getIdleKeyColor(baseColor, isWhite, inScale);
-  const materialRoughness = isWhite ? 0.46 : 0.3;
-  const materialClearcoat = isWhite ? 0.35 : 1;
+        : getIdleKeyColor(baseColor, isWhite, muted);
+  // Приглушённые клавиши делаем матовыми: глянец «оживляет» поверхность, поэтому
+  // без него они выглядят погасшими и отступают на задний план (особенно чёрные).
+  const materialRoughness = muted ? 0.82 : isWhite ? 0.46 : 0.3;
+  const materialClearcoat = muted ? 0 : isWhite ? 0.35 : 1;
   const materialClearcoatRoughness = isWhite ? 0.3 : 0.12;
 
   useFrame((state) => {
@@ -146,7 +165,7 @@ export function PianoKey3D({
         radius={isWhite ? 0.035 : 0.07}
         smoothness={4}
         position={[0, placement.y - (keyPressed ? PRESS_DEPTH : 0), 0]}
-        castShadow
+        castShadow={!muted}
         receiveShadow
         onClick={(event) => {
           event.stopPropagation();
@@ -174,6 +193,10 @@ export function PianoKey3D({
           metalness={0.02}
           clearcoat={materialClearcoat}
           clearcoatRoughness={materialClearcoatRoughness}
+          transparent={muted}
+          opacity={
+            muted ? (isWhite ? OFF_SCALE_WHITE_OPACITY : OFF_SCALE_BLACK_OPACITY) : 1
+          }
           emissive={
             midiPressed || chordMaterialEmphasis !== null
               ? glowColor
@@ -313,17 +336,16 @@ function getChordGlowIntensity(
 function getIdleKeyColor(
   baseColor: string,
   isWhite: boolean,
-  inScale: boolean,
+  muted: boolean,
 ): string {
-  if (!inScale) {
+  if (!muted) {
     return baseColor;
   }
 
-  const surface = isWhite ? "white" : "black";
+  const target = isWhite ? OFF_SCALE_WHITE : OFF_SCALE_BLACK;
+  const mix = isWhite ? OFF_SCALE_WHITE_MIX : OFF_SCALE_BLACK_MIX;
 
-  return `#${new Color(baseColor)
-    .lerp(new Color(HIGHLIGHT_COLORS.inScale), SCALE_KEY_COLOR_MIX[surface])
-    .getHexString()}`;
+  return `#${new Color(baseColor).lerp(new Color(target), mix).getHexString()}`;
 }
 
 /** На золотой подсветке аккорда читается только темная подпись — особенно на черных клавишах. */
