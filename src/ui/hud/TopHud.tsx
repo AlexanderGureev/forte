@@ -5,6 +5,14 @@ import { LabelModeControl } from './LabelModeControl';
 import { MidiPanel, type MidiPanelProps } from './MidiPanel';
 import { ScaleFingeringControl } from './ScaleFingeringControl';
 import type { ScaleSummary } from '../../state/selectors';
+import {
+  adjustCameraZoom,
+  CAMERA_ZOOM_MAX,
+  CAMERA_ZOOM_MIN,
+  CAMERA_ZOOM_STEP,
+  DEFAULT_CAMERA_ZOOM,
+  formatCameraZoomPercent
+} from '../../state/view-settings';
 import type {
   ColorLegendItem,
   LabelMode,
@@ -100,6 +108,8 @@ export interface HudActionsProps {
   readonly showViewMenu: boolean;
   readonly chordLayerEnabled: boolean;
   readonly onToggleChordLayer: () => void;
+  readonly chordEchoEnabled: boolean;
+  readonly onToggleChordEcho: () => void;
   readonly scaleFingeringEnabled: boolean;
   readonly scaleFingeringHand: ScaleFingeringHand;
   readonly scaleFingeringDirection: ScaleFingeringDirection;
@@ -112,6 +122,11 @@ export interface HudActionsProps {
   readonly labelMode: LabelMode;
   readonly onToggleLabels: () => void;
   readonly onSelectLabelMode: (labelMode: LabelMode) => void;
+  readonly dimOutOfScale: boolean;
+  readonly onToggleDimOutOfScale: () => void;
+  readonly cameraZoom: number;
+  readonly onChangeCameraZoom: (cameraZoom: number) => void;
+  readonly onResetCameraZoom: () => void;
   readonly midiPanel: MidiPanelProps;
   readonly colorLegend: readonly ColorLegendItem[];
   readonly onOpenTheory: (target: TheoryOverlayContextTarget) => void;
@@ -124,6 +139,8 @@ export function HudActions({
   showViewMenu,
   chordLayerEnabled,
   onToggleChordLayer,
+  chordEchoEnabled,
+  onToggleChordEcho,
   scaleFingeringEnabled,
   scaleFingeringHand,
   scaleFingeringDirection,
@@ -136,6 +153,11 @@ export function HudActions({
   labelMode,
   onToggleLabels,
   onSelectLabelMode,
+  dimOutOfScale,
+  onToggleDimOutOfScale,
+  cameraZoom,
+  onChangeCameraZoom,
+  onResetCameraZoom,
   midiPanel,
   colorLegend,
   onOpenTheory,
@@ -148,6 +170,8 @@ export function HudActions({
         <ViewMenu
           chordLayerEnabled={chordLayerEnabled}
           onToggleChordLayer={onToggleChordLayer}
+          chordEchoEnabled={chordEchoEnabled}
+          onToggleChordEcho={onToggleChordEcho}
           scaleFingeringEnabled={scaleFingeringEnabled}
           scaleFingeringHand={scaleFingeringHand}
           scaleFingeringDirection={scaleFingeringDirection}
@@ -160,6 +184,11 @@ export function HudActions({
           labelMode={labelMode}
           onToggleLabels={onToggleLabels}
           onSelectLabelMode={onSelectLabelMode}
+          dimOutOfScale={dimOutOfScale}
+          onToggleDimOutOfScale={onToggleDimOutOfScale}
+          cameraZoom={cameraZoom}
+          onChangeCameraZoom={onChangeCameraZoom}
+          onResetCameraZoom={onResetCameraZoom}
           colorLegend={colorLegend}
           onOpenTheory={onOpenTheory}
         />
@@ -252,9 +281,67 @@ export function ScaleDisplayModeControl({
   );
 }
 
+interface CameraZoomControlProps {
+  readonly cameraZoom: number;
+  readonly onChangeCameraZoom: (cameraZoom: number) => void;
+  readonly onResetCameraZoom: () => void;
+}
+
+export function CameraZoomControl({
+  cameraZoom,
+  onChangeCameraZoom,
+  onResetCameraZoom
+}: CameraZoomControlProps) {
+  const zoomPercent = formatCameraZoomPercent(cameraZoom);
+
+  return (
+    <div className="hud-camera-zoom" role="group" aria-label="Масштаб камеры">
+      <button
+        className="hud-action hud-camera-zoom__button"
+        type="button"
+        aria-label="Отдалить камеру"
+        disabled={cameraZoom <= CAMERA_ZOOM_MIN}
+        onClick={() => onChangeCameraZoom(adjustCameraZoom(cameraZoom, -1))}
+      >
+        -
+      </button>
+      <input
+        className="hud-camera-zoom__slider"
+        type="range"
+        min={CAMERA_ZOOM_MIN}
+        max={CAMERA_ZOOM_MAX}
+        step={CAMERA_ZOOM_STEP}
+        value={cameraZoom}
+        aria-label="Масштаб камеры"
+        onChange={(event) => onChangeCameraZoom(Number(event.currentTarget.value))}
+      />
+      <button
+        className="hud-action hud-camera-zoom__button"
+        type="button"
+        aria-label="Приблизить камеру"
+        disabled={cameraZoom >= CAMERA_ZOOM_MAX}
+        onClick={() => onChangeCameraZoom(adjustCameraZoom(cameraZoom, 1))}
+      >
+        +
+      </button>
+      <button
+        className="hud-action hud-camera-zoom__reset"
+        type="button"
+        aria-label="Сбросить масштаб камеры"
+        disabled={cameraZoom === DEFAULT_CAMERA_ZOOM}
+        onClick={onResetCameraZoom}
+      >
+        {zoomPercent}
+      </button>
+    </div>
+  );
+}
+
 interface ViewMenuProps {
   readonly chordLayerEnabled: boolean;
   readonly onToggleChordLayer: () => void;
+  readonly chordEchoEnabled: boolean;
+  readonly onToggleChordEcho: () => void;
   readonly scaleFingeringEnabled: boolean;
   readonly scaleFingeringHand: ScaleFingeringHand;
   readonly scaleFingeringDirection: ScaleFingeringDirection;
@@ -267,6 +354,11 @@ interface ViewMenuProps {
   readonly labelMode: LabelMode;
   readonly onToggleLabels: () => void;
   readonly onSelectLabelMode: (labelMode: LabelMode) => void;
+  readonly dimOutOfScale: boolean;
+  readonly onToggleDimOutOfScale: () => void;
+  readonly cameraZoom: number;
+  readonly onChangeCameraZoom: (cameraZoom: number) => void;
+  readonly onResetCameraZoom: () => void;
   readonly colorLegend: readonly ColorLegendItem[];
   readonly onOpenTheory: (target: TheoryOverlayContextTarget) => void;
 }
@@ -275,6 +367,8 @@ interface ViewMenuProps {
 function ViewMenu({
   chordLayerEnabled,
   onToggleChordLayer,
+  chordEchoEnabled,
+  onToggleChordEcho,
   scaleFingeringEnabled,
   scaleFingeringHand,
   scaleFingeringDirection,
@@ -287,6 +381,11 @@ function ViewMenu({
   labelMode,
   onToggleLabels,
   onSelectLabelMode,
+  dimOutOfScale,
+  onToggleDimOutOfScale,
+  cameraZoom,
+  onChangeCameraZoom,
+  onResetCameraZoom,
   colorLegend,
   onOpenTheory
 }: ViewMenuProps) {
@@ -353,15 +452,46 @@ function ViewMenu({
             />
           </div>
           <div className="hud-view-menu__row">
+            <span className="hud-view-menu__label">Камера</span>
+            <CameraZoomControl
+              cameraZoom={cameraZoom}
+              onChangeCameraZoom={onChangeCameraZoom}
+              onResetCameraZoom={onResetCameraZoom}
+            />
+          </div>
+          <div className="hud-view-menu__row">
             <span className="hud-view-menu__label">Слой аккорда</span>
-            <button
-              className="hud-toggle"
-              type="button"
-              aria-pressed={!chordLayerEnabled}
-              onClick={onToggleChordLayer}
-            >
-              Только гамма
-            </button>
+            <div className="hud-view-menu__toggle-row">
+              <button
+                className="hud-toggle"
+                type="button"
+                aria-pressed={!chordLayerEnabled}
+                onClick={onToggleChordLayer}
+              >
+                Только гамма
+              </button>
+              <button
+                className="hud-toggle"
+                type="button"
+                aria-pressed={chordEchoEnabled}
+                onClick={onToggleChordEcho}
+              >
+                Дубли аккорда
+              </button>
+            </div>
+          </div>
+          <div className="hud-view-menu__row">
+            <span className="hud-view-menu__label">Клавиши вне гаммы</span>
+            <div className="hud-view-menu__toggle-row">
+              <button
+                className="hud-toggle"
+                type="button"
+                aria-pressed={dimOutOfScale}
+                onClick={onToggleDimOutOfScale}
+              >
+                Приглушить
+              </button>
+            </div>
           </div>
           <div className="hud-view-menu__row">
             <span className="hud-view-menu__label">Аппликатура гаммы</span>

@@ -1,5 +1,6 @@
 import './primitives.css';
 import type { MiniKeyboardKeyViewModel } from '../../state/selectors';
+import type { CSSProperties } from 'react';
 
 export interface MiniKeyboardProps {
   readonly keys: readonly MiniKeyboardKeyViewModel[];
@@ -43,6 +44,7 @@ export function MiniKeyboard({
             data-pitch-class={key.physicalPitchClass}
             data-active={key.active ? 'true' : 'false'}
             aria-label={formatKeyAriaLabel(key)}
+            style={getKeyStyle(key, keys)}
           >
             {(key.active || showInactiveLabels) && key.noteLabel !== null ? (
               <span className="primitive-mini-keyboard__label">{key.noteLabel}</span>
@@ -52,6 +54,38 @@ export function MiniKeyboard({
       </div>
     </div>
   );
+}
+
+const BLACK_KEY_WIDTH_PERCENT = 11;
+
+function getKeyStyle(
+  key: MiniKeyboardKeyViewModel,
+  keys: readonly MiniKeyboardKeyViewModel[]
+): CSSProperties | undefined {
+  if (!key.isBlackKey) {
+    return undefined;
+  }
+
+  const previousWhitePitchClass = previousPitchClass(key.physicalPitchClass);
+  const whiteKeys = keys.filter((candidate) => candidate.isWhiteKey);
+  const previousWhiteIndex = whiteKeys.findIndex(
+    (candidate) => candidate.physicalPitchClass === previousWhitePitchClass
+  );
+
+  if (previousWhiteIndex < 0) {
+    return undefined;
+  }
+
+  const leftPercent =
+    ((previousWhiteIndex + 1) / whiteKeys.length) * 100 - BLACK_KEY_WIDTH_PERCENT / 2;
+
+  return { left: `${leftPercent}%` };
+}
+
+function previousPitchClass(
+  physicalPitchClass: MiniKeyboardKeyViewModel['physicalPitchClass']
+): MiniKeyboardKeyViewModel['physicalPitchClass'] {
+  return ((physicalPitchClass + 11) % 12) as MiniKeyboardKeyViewModel['physicalPitchClass'];
 }
 
 function formatKeyAriaLabel(key: MiniKeyboardKeyViewModel): string {

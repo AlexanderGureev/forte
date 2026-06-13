@@ -1,4 +1,5 @@
 import './primitives.css';
+import { MiniKeyboard } from './MiniKeyboard';
 import type { ChordCardViewModel } from '../../state/selectors';
 
 export interface ChordCardProps {
@@ -39,6 +40,11 @@ export function ChordCard({ chord, onSelect, disabled = false, className }: Chor
           {marker}
         </span>
       ) : null}
+      <MiniKeyboard
+        keys={chord.miniKeyboardKeys}
+        ariaLabel={`Мини-клавиатура аккорда ${chord.chordName}`}
+        className="primitive-chord-card__keyboard"
+      />
     </button>
   );
 }

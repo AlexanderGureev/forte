@@ -81,6 +81,23 @@ function makeMiniKeys(): readonly MiniKeyboardKeyViewModel[] {
   ];
 }
 
+function makeBdimMiniKeys(): readonly MiniKeyboardKeyViewModel[] {
+  return [
+    makeMiniKey(11, true, 'B'),
+    makeMiniKey(0, false),
+    makeMiniKey(1, false),
+    makeMiniKey(2, true, 'D'),
+    makeMiniKey(3, false),
+    makeMiniKey(4, false),
+    makeMiniKey(5, true, 'F'),
+    makeMiniKey(6, false),
+    makeMiniKey(7, false),
+    makeMiniKey(8, false),
+    makeMiniKey(9, false),
+    makeMiniKey(10, false)
+  ];
+}
+
 function makeKey(
   displayName: KeyDefinition['displayName'],
   mode: Mode,
@@ -116,6 +133,7 @@ describe('primitive components', () => {
       chordName: 'Bdim',
       quality: 'diminished',
       notes: [makeScaleNote('B', 11, 7), makeScaleNote('D', 2, 2), makeScaleNote('F', 5, 4)],
+      miniKeyboardKeys: makeBdimMiniKeys(),
       tense: true,
       selected: true,
       inCurrentProgression: false
@@ -131,6 +149,7 @@ describe('primitive components', () => {
     expect(button.getAttribute('aria-pressed')).toBe('true');
     expect(button.textContent).toContain('Bdim');
     expect(button.textContent).toContain('dim');
+    expect(screen.getByRole('img').getAttribute('aria-label')).toContain('B, D, F');
 
     fireEvent.click(button);
 

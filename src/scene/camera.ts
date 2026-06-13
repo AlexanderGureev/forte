@@ -1,4 +1,5 @@
-import type { KeyboardViewport } from "../music/types";
+import type { KeyboardViewport } from '../music/types';
+import { DEFAULT_CAMERA_ZOOM, normalizeCameraZoom } from '../state/view-settings';
 
 export interface StudioCameraPlacement {
   readonly position: readonly [number, number, number];
@@ -31,7 +32,7 @@ export const DESKTOP_HUD_SIDE_PX = 628;
 const TARGET_Y_BY_VIEWPORT: Record<KeyboardViewport, number> = {
   desktop: -1.6,
   tablet: 0.2,
-  mobile: -0.8,
+  mobile: -0.2,
 };
 
 export function getStudioCameraPlacement(
@@ -40,6 +41,7 @@ export function getStudioCameraPlacement(
   viewport: KeyboardViewport,
   viewportWidthPx: number,
   hudSidePx: number = DESKTOP_HUD_SIDE_PX,
+  cameraZoom: number = DEFAULT_CAMERA_ZOOM,
 ): StudioCameraPlacement {
   const halfVerticalFov = (CAMERA_FOV * Math.PI) / 360;
   const halfHorizontalFov = Math.atan(
@@ -50,7 +52,7 @@ export function getStudioCameraPlacement(
   const distance = Math.max(
     requiredHalfWidth / Math.tan(halfHorizontalFov),
     16,
-  );
+  ) / normalizeCameraZoom(cameraZoom);
   const target = [0, TARGET_Y_BY_VIEWPORT[viewport], -0.9] as const;
 
   return {
@@ -73,7 +75,7 @@ function getWidthMargin(
   viewportWidthPx: number,
   hudSidePx: number,
 ): number {
-  if (viewport !== "desktop" || viewportWidthPx <= hudSidePx) {
+  if (viewport !== 'desktop' || viewportWidthPx <= hudSidePx) {
     return WIDTH_MARGIN_BY_VIEWPORT[viewport];
   }
 

@@ -27,19 +27,19 @@
 
 /* Боковые колонки фиксированы и симметричны: центр (прогрессия) не съезжает
    при сворачивании панелей */
-.hud[data-layout='wide'] {
+.hud[data-layout="wide"] {
   display: grid;
   grid-template-columns: 272px minmax(0, 1fr) 272px;
   grid-template-rows: auto 1fr auto;
   grid-template-areas:
-    'top top top'
-    'left . right'
-    'bottom bottom bottom';
+    "top top top"
+    "left . right"
+    "bottom bottom bottom";
   gap: 10px;
   padding: 10px 14px;
 }
 
-.hud[data-layout='compact'] {
+.hud[data-layout="compact"] {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -112,7 +112,7 @@
 }
 
 /* Та же ширина, что у панели «Тональность» под ним: левый край выглядит одной колонкой */
-.hud[data-layout='wide'] .hud-topstrip > .hud-identity {
+.hud[data-layout="wide"] .hud-topstrip > .hud-identity {
   width: 236px;
 }
 
@@ -132,7 +132,7 @@
   font-family: var(--font-display);
   font-size: clamp(1.2rem, 1.5vw, 1.45rem);
   font-weight: 580;
-  font-variation-settings: 'opsz' 40;
+  font-variation-settings: "opsz" 40;
   line-height: 1;
   letter-spacing: 0.01em;
   white-space: nowrap;
@@ -172,7 +172,7 @@
   align-items: center;
 }
 
-.hud-identity__meta-flag[data-visible='false'] {
+.hud-identity__meta-flag[data-visible="false"] {
   visibility: hidden;
 }
 
@@ -235,7 +235,7 @@
   text-align: center;
 }
 
-.hud-scale-chip[data-tonic='true'] {
+.hud-scale-chip[data-tonic="true"] {
   border-color: rgba(224, 170, 92, 0.5);
   background: var(--gold-soft);
 }
@@ -339,7 +339,7 @@
   white-space: nowrap;
 }
 
-.hud-score-staff__label[data-highlight-priority='activeChord'] {
+.hud-score-staff__label[data-highlight-priority="activeChord"] {
   color: var(--gold);
 }
 
@@ -352,20 +352,24 @@
   font-size: 0.56rem;
 }
 
-.hud-score-staff__label[data-highlight-priority='activeChord'] .hud-score-staff__label-meta {
+.hud-score-staff__label[data-highlight-priority="activeChord"]
+  .hud-score-staff__label-meta {
   color: #fbe3b4;
 }
 
-.hud-score-staff__label[data-midi-pressed='true'] {
+.hud-score-staff__label[data-midi-pressed="true"] {
   color: #80edff;
-  text-shadow: 0 0 9px rgba(75, 220, 255, 0.42), 0 1px 7px rgba(0, 0, 0, 0.55);
+  text-shadow:
+    0 0 9px rgba(75, 220, 255, 0.42),
+    0 1px 7px rgba(0, 0, 0, 0.55);
 }
 
-.hud-score-staff__label[data-midi-pressed='true'] .hud-score-staff__label-meta {
+.hud-score-staff__label[data-midi-pressed="true"] .hud-score-staff__label-meta {
   color: #c8f8ff;
 }
 
-.hud-score-staff__label[data-midi-pressed='true'] .hud-score-staff__label-finger {
+.hud-score-staff__label[data-midi-pressed="true"]
+  .hud-score-staff__label-finger {
   border-color: rgba(128, 237, 255, 0.56);
   color: #e6fbff;
   background: #123948;
@@ -397,6 +401,42 @@
   max-width: 100%;
 }
 
+.hud-camera-zoom {
+  display: grid;
+  grid-template-columns: 30px minmax(92px, 1fr) 30px minmax(54px, auto);
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.hud-camera-zoom__button.hud-action {
+  display: inline-grid;
+  width: 30px;
+  min-width: 30px;
+  padding: 0;
+  place-items: center;
+  font-size: 1rem;
+}
+
+.hud-camera-zoom__slider {
+  width: 100%;
+  min-width: 0;
+  accent-color: var(--gold);
+  cursor: pointer;
+}
+
+.hud-camera-zoom__slider:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 4px;
+}
+
+.hud-camera-zoom__reset.hud-action {
+  min-width: 54px;
+  padding: 0 10px;
+  text-align: center;
+}
+
 /* ---------- Меню «Вид» ---------- */
 
 .hud-view-menu {
@@ -425,6 +465,13 @@
 
 .hud-view-menu__row .hud-toggle {
   justify-self: start;
+}
+
+.hud-view-menu__toggle-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
 }
 
 .hud-view-menu__label {
@@ -479,7 +526,7 @@
   line-height: 1.25;
 }
 
-.midi-panel[data-status='connected'] .midi-panel__status {
+.midi-panel[data-status="connected"] .midi-panel__status {
   color: #80edff;
 }
 
@@ -504,14 +551,17 @@
   text-align: left;
   background: rgba(244, 238, 226, 0.05);
   cursor: pointer;
-  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
 }
 
 .midi-panel__input:hover {
   border-color: rgba(89, 200, 255, 0.56);
 }
 
-.midi-panel__input[aria-checked='true'] {
+.midi-panel__input[aria-checked="true"] {
   border-color: rgba(89, 200, 255, 0.72);
   background: rgba(89, 200, 255, 0.13);
 }
@@ -617,7 +667,10 @@
   white-space: nowrap;
   background: rgba(244, 238, 226, 0.05);
   cursor: pointer;
-  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
 }
 
 .hud-toggle:hover,
@@ -625,11 +678,17 @@
   border-color: rgba(224, 170, 92, 0.55);
 }
 
-.hud-toggle[aria-pressed='true'],
-.hud-action[data-active='true'] {
+.hud-toggle[aria-pressed="true"],
+.hud-action[data-active="true"] {
   border-color: rgba(224, 170, 92, 0.7);
   color: #1a1410;
   background: var(--gold);
+}
+
+.hud-toggle:disabled,
+.hud-action:disabled {
+  opacity: 0.46;
+  cursor: not-allowed;
 }
 
 .hud-info-button {
@@ -656,7 +715,7 @@
 
 /* Кнопка сворачивания: ровный CSS-шеврон вместо текстового глифа */
 .hud-collapse-button::before {
-  content: '';
+  content: "";
   display: block;
   width: 6px;
   height: 6px;
@@ -664,11 +723,11 @@
   border-left: 1.6px solid currentColor;
 }
 
-.hud-collapse-button[data-direction='left']::before {
+.hud-collapse-button[data-direction="left"]::before {
   transform: translateX(1.5px) rotate(45deg);
 }
 
-.hud-collapse-button[data-direction='right']::before {
+.hud-collapse-button[data-direction="right"]::before {
   transform: translateX(-1.5px) rotate(225deg);
 }
 
@@ -733,7 +792,9 @@
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   cursor: pointer;
-  transition: color 140ms ease, border-color 140ms ease;
+  transition:
+    color 140ms ease,
+    border-color 140ms ease;
 }
 
 .hud-rail--left .hud-rail-tab {
@@ -741,7 +802,7 @@
 }
 
 .hud-rail-tab::after {
-  content: '›';
+  content: "›";
   font-size: 0.9rem;
 }
 
@@ -788,7 +849,7 @@
   height: 14px;
 }
 
-.hud-legend__swatch[data-kind='inScale'] {
+.hud-legend__swatch[data-kind="inScale"] {
   width: 8px;
   height: 8px;
   margin: 0 3px;
@@ -796,14 +857,14 @@
   background: #c89a55;
 }
 
-.hud-legend__swatch[data-kind='tonic'] {
+.hud-legend__swatch[data-kind="tonic"] {
   padding: 2px;
   border: 2px solid #ffc14f;
   border-radius: 50%;
   background: #ffc14f content-box;
 }
 
-.hud-legend__swatch[data-kind='activeChord'] {
+.hud-legend__swatch[data-kind="activeChord"] {
   width: 10px;
   height: 16px;
   margin: 0 2px;
@@ -812,23 +873,25 @@
   box-shadow: 0 0 7px rgba(253, 200, 120, 0.45);
 }
 
-.hud-legend__swatch[data-kind='midiPressed'] {
+.hud-legend__swatch[data-kind="midiPressed"] {
   width: 10px;
   height: 16px;
   margin: 0 2px;
   border-radius: 2px 2px 3px 3px;
   background: linear-gradient(180deg, #d7fbff, #4bdcff 58%, #16819a);
-  box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.36), 0 0 8px rgba(75, 220, 255, 0.52);
+  box-shadow:
+    inset 0 2px 3px rgba(255, 255, 255, 0.36),
+    0 0 8px rgba(75, 220, 255, 0.52);
 }
 
-.hud-legend__swatch[data-kind='chordRoot'] {
+.hud-legend__swatch[data-kind="chordRoot"] {
   border: 3px solid #fff1da;
   border-radius: 50%;
   background: transparent;
 }
 
-.hud-legend__swatch[data-kind='fingering'],
-.hud-legend__swatch[data-kind='fingeringOnChord'] {
+.hud-legend__swatch[data-kind="fingering"],
+.hud-legend__swatch[data-kind="fingeringOnChord"] {
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -837,23 +900,23 @@
   line-height: 1;
 }
 
-.hud-legend__swatch[data-kind='fingering']::after,
-.hud-legend__swatch[data-kind='fingeringOnChord']::after {
-  content: '1';
+.hud-legend__swatch[data-kind="fingering"]::after,
+.hud-legend__swatch[data-kind="fingeringOnChord"]::after {
+  content: "1";
 }
 
-.hud-legend__swatch[data-kind='fingering'] {
+.hud-legend__swatch[data-kind="fingering"] {
   color: #241608;
   background: #e0aa5c;
 }
 
-.hud-legend__swatch[data-kind='fingeringOnChord'] {
+.hud-legend__swatch[data-kind="fingeringOnChord"] {
   border: 1px solid rgba(255, 233, 194, 0.4);
   color: #ffe9c2;
   background: #2a1708;
 }
 
-.hud-legend__swatch[data-kind='diminished'] {
+.hud-legend__swatch[data-kind="diminished"] {
   width: 10px;
   height: 16px;
   margin: 0 2px;
@@ -887,15 +950,23 @@
 
 .hud-chord-panel .primitive-chord-card {
   min-height: 46px;
-  gap: 10px;
-  padding: 7px 10px;
+  grid-template-columns: minmax(26px, auto) minmax(0, 1fr) auto;
+  gap: 7px 10px;
+  align-items: center;
+  padding: 7px 18px;
   box-shadow: none;
 }
 
 .hud-chord-panel .primitive-chord-card__degree {
+  justify-self: start;
   min-width: 26px;
   height: 26px;
   font-size: 0.8rem;
+}
+
+.hud-chord-panel .primitive-chord-card__body {
+  justify-items: start;
+  text-align: left;
 }
 
 .hud-chord-panel .primitive-chord-card__name {
@@ -904,6 +975,25 @@
 
 .hud-chord-panel .primitive-chord-card__notes {
   font-size: 0.76rem;
+}
+
+.hud-chord-panel .primitive-chord-card__marker {
+  align-self: center;
+  justify-self: end;
+}
+
+.hud-chord-panel .primitive-chord-card__keyboard {
+  justify-self: center;
+  min-width: 0;
+  width: 100%;
+}
+
+.hud-chord-panel .primitive-mini-keyboard {
+  min-width: 0;
+}
+
+#root .hud-chord-panel .primitive-mini-keyboard__rail {
+  height: 28px;
 }
 
 .hud-rail--left .primitive-key-selector__recommended-key {
@@ -950,7 +1040,7 @@
   cursor: pointer;
 }
 
-.hud-preset[aria-pressed='true'] {
+.hud-preset[aria-pressed="true"] {
   border-color: rgba(224, 170, 92, 0.7);
   color: #1a1410;
   background: var(--gold);
@@ -972,7 +1062,7 @@
   white-space: nowrap;
 }
 
-.hud-progression__status[data-source='manual'] {
+.hud-progression__status[data-source="manual"] {
   color: var(--gold);
 }
 
@@ -1049,26 +1139,6 @@
   color: #f3ede0;
 }
 
-#root .primitive-mini-keyboard__key--black[data-pitch-class='1'] {
-  left: 8.8%;
-}
-
-#root .primitive-mini-keyboard__key--black[data-pitch-class='3'] {
-  left: 23.1%;
-}
-
-#root .primitive-mini-keyboard__key--black[data-pitch-class='6'] {
-  left: 51.6%;
-}
-
-#root .primitive-mini-keyboard__key--black[data-pitch-class='8'] {
-  left: 65.9%;
-}
-
-#root .primitive-mini-keyboard__key--black[data-pitch-class='10'] {
-  left: 80.2%;
-}
-
 /* Ноты аккорда — то же золото, что и подсветка на 3D-клавиатуре.
    Намеренно приглушены, чтобы не конкурировать с главной клавиатурой. */
 #root .primitive-mini-keyboard__key--active {
@@ -1091,7 +1161,7 @@
 /* ---------- Компактный layout ---------- */
 
 /* Тональность и прогрессия слиты в один вертикальный блок */
-.hud[data-layout='compact'] .hud-topstrip {
+.hud[data-layout="compact"] .hud-topstrip {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 8px;
@@ -1099,7 +1169,7 @@
 }
 
 /* Перебивает десктопный justify-self: start — плашка на всю ширину */
-.hud[data-layout='compact'] .hud-topstrip > .hud-identity {
+.hud[data-layout="compact"] .hud-topstrip > .hud-identity {
   justify-self: stretch;
 }
 
@@ -1126,16 +1196,16 @@
   margin-left: auto;
 }
 
-.hud[data-layout='compact'] .hud-progression {
+.hud[data-layout="compact"] .hud-progression {
   justify-items: stretch;
 }
 
 /* Без переноса по центру: метка и статус в одной строке, пресеты под ними */
-.hud[data-layout='compact'] .hud-progression__header {
+.hud[data-layout="compact"] .hud-progression__header {
   display: grid;
   grid-template-areas:
-    'label status'
-    'presets presets';
+    "label status"
+    "presets presets";
   grid-template-columns: auto minmax(0, 1fr);
   gap: 8px 12px;
   align-items: center;
@@ -1143,29 +1213,29 @@
   width: 100%;
 }
 
-.hud[data-layout='compact'] .hud-progression__header .hud-eyebrow {
+.hud[data-layout="compact"] .hud-progression__header .hud-eyebrow {
   grid-area: label;
 }
 
-.hud[data-layout='compact'] .hud-progression__presets {
+.hud[data-layout="compact"] .hud-progression__presets {
   grid-area: presets;
 }
 
-.hud[data-layout='compact'] .hud-progression__status-group {
+.hud[data-layout="compact"] .hud-progression__status-group {
   grid-area: status;
   justify-self: end;
 }
 
-.hud[data-layout='compact'] .hud-progression__status {
+.hud[data-layout="compact"] .hud-progression__status {
   min-width: 0;
 }
 
 /* На планшетах и мобильных полоса гаммы живет внизу, над тулбаром */
-.hud[data-layout='compact'] .hud-bottom {
+.hud[data-layout="compact"] .hud-bottom {
   margin-top: auto;
 }
 
-.hud[data-layout='compact'] .hud-progression__cards {
+.hud[data-layout="compact"] .hud-progression__cards {
   justify-content: flex-start;
 }
 
@@ -1178,7 +1248,7 @@
 }
 
 @media (max-width: 719px) {
-  .hud[data-layout='compact'] {
+  .hud[data-layout="compact"] {
     gap: 8px;
     padding: 10px;
   }
@@ -1221,7 +1291,7 @@
     font-size: 0.8rem;
   }
 
-  .hud-scale-strip[data-fingering='true'] {
+  .hud-scale-strip[data-fingering="true"] {
     flex-wrap: wrap;
     justify-content: center;
     border-radius: 16px;
@@ -1287,6 +1357,10 @@
   gap: 12px;
 }
 
+.sheet .hud-chord-panel .primitive-chord-card__keyboard {
+  width: min(88%, 220px);
+}
+
 .sheet__view-controls {
   display: grid;
   gap: 10px;
@@ -1297,6 +1371,8 @@
   gap: 8px;
   justify-items: start;
   min-width: 0;
+  max-width: 360px;
+  width: 100%;
 }
 
 .sheet__view-controls-row {

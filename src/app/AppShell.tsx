@@ -9,7 +9,12 @@ import { RecommendedKeys } from '../ui/hud/RecommendedKeys';
 import { ScaleFingeringControl } from '../ui/hud/ScaleFingeringControl';
 import { ScaleStrip } from '../ui/hud/ScaleStrip';
 import { ScoreStaff } from '../ui/hud/ScoreStaff';
-import { HudActions, KeyIdentity, ScaleDisplayModeControl } from '../ui/hud/TopHud';
+import {
+  CameraZoomControl,
+  HudActions,
+  KeyIdentity,
+  ScaleDisplayModeControl
+} from '../ui/hud/TopHud';
 import {
   TheoryOverlay,
   usePrimitiveHotkeys,
@@ -175,6 +180,9 @@ export function AppShell() {
         <PianoStudioScene
           viewModel={keyboardViewModel}
           chordRootPitchClass={activeChordStatus.chord.notes[0].physicalPitchClass}
+          chordEchoEnabled={store.chordEchoEnabled}
+          dimOutOfScale={store.dimOutOfScale}
+          cameraZoom={store.cameraZoom}
           motionEnabled={uiConfig.decorativeMotionEnabled}
           hudSidePx={hudSidePx}
           onSelectKey={handleSelectKey3D}
@@ -204,6 +212,8 @@ export function AppShell() {
               showViewMenu={uiConfig.visiblePanels.theoryHints}
               chordLayerEnabled={store.chordLayerEnabled}
               onToggleChordLayer={store.toggleChordLayer}
+              chordEchoEnabled={store.chordEchoEnabled}
+              onToggleChordEcho={store.toggleChordEcho}
               scaleFingeringEnabled={store.scaleFingeringEnabled}
               scaleFingeringHand={store.scaleFingeringHand}
               scaleFingeringDirection={store.scaleFingeringDirection}
@@ -216,6 +226,11 @@ export function AppShell() {
               labelMode={store.labelMode}
               onToggleLabels={store.toggleLabelsVisible}
               onSelectLabelMode={store.setLabelMode}
+              dimOutOfScale={store.dimOutOfScale}
+              onToggleDimOutOfScale={store.toggleDimOutOfScale}
+              cameraZoom={store.cameraZoom}
+              onChangeCameraZoom={store.setCameraZoom}
+              onResetCameraZoom={store.resetCameraZoom}
               midiPanel={midiPanelProps}
               colorLegend={colorLegend}
               onOpenTheory={store.openTheoryOverlay}
@@ -359,6 +374,14 @@ export function AppShell() {
                         onSelectScaleDisplayMode={store.setScaleDisplayMode}
                       />
                     </div>
+                    <div className="sheet__view-controls-group">
+                      <span className="hud-view-menu__label">Камера</span>
+                      <CameraZoomControl
+                        cameraZoom={store.cameraZoom}
+                        onChangeCameraZoom={store.setCameraZoom}
+                        onResetCameraZoom={store.resetCameraZoom}
+                      />
+                    </div>
                     <div className="sheet__view-controls-row">
                       <button
                         className="hud-toggle"
@@ -367,6 +390,22 @@ export function AppShell() {
                         onClick={store.toggleChordLayer}
                       >
                         Только гамма
+                      </button>
+                      <button
+                        className="hud-toggle"
+                        type="button"
+                        aria-pressed={store.chordEchoEnabled}
+                        onClick={store.toggleChordEcho}
+                      >
+                        Дубли аккорда
+                      </button>
+                      <button
+                        className="hud-toggle"
+                        type="button"
+                        aria-pressed={store.dimOutOfScale}
+                        onClick={store.toggleDimOutOfScale}
+                      >
+                        Приглушить вне гаммы
                       </button>
                       <LabelModeControl
                         labelsVisible={store.labelsVisible}

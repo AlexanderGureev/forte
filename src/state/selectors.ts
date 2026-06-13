@@ -49,6 +49,7 @@ export interface ChordCardViewModel {
   readonly chordName: string;
   readonly quality: DiatonicChord['quality'];
   readonly notes: readonly ScaleNote[];
+  readonly miniKeyboardKeys: readonly MiniKeyboardKeyViewModel[];
   readonly tense: boolean;
   readonly selected: boolean;
   readonly inCurrentProgression: boolean;
@@ -171,6 +172,7 @@ export function selectChordList(state: AppState): readonly ChordCardViewModel[] 
     chordName: chord.name,
     quality: chord.quality,
     notes: chord.notes,
+    miniKeyboardKeys: createMiniKeyboardKeys(chord.notes),
     tense: chord.tense,
     selected: chord.degree === activeChordStatus.degree,
     inCurrentProgression: progressionDegrees.has(chord.degree)
@@ -366,8 +368,12 @@ function createMiniKeyboardKeys(
   chordNotes: readonly ScaleNote[]
 ): readonly MiniKeyboardKeyViewModel[] {
   const chordNoteByPitchClass = new Map(chordNotes.map((note) => [note.physicalPitchClass, note]));
+  const rootPitchClass = chordNotes[0]?.physicalPitchClass ?? 0;
+  const startPitchClass = isBlackKeyPitchClass(rootPitchClass)
+    ? previousPitchClass(rootPitchClass)
+    : rootPitchClass;
 
-  return PHYSICAL_PITCH_CLASSES.map((physicalPitchClass) => {
+  return getPitchClassesFrom(startPitchClass).map((physicalPitchClass) => {
     const note = chordNoteByPitchClass.get(physicalPitchClass) ?? null;
     const isBlackKey = isBlackKeyPitchClass(physicalPitchClass);
 
@@ -380,4 +386,20 @@ function createMiniKeyboardKeys(
       active: note !== null
     };
   });
+}
+
+function getPitchClassesFrom(
+  startPitchClass: PhysicalPitchClass
+): readonly PhysicalPitchClass[] {
+  const startIndex = PHYSICAL_PITCH_CLASSES.indexOf(startPitchClass);
+
+  return [
+    ...PHYSICAL_PITCH_CLASSES.slice(startIndex),
+    ...PHYSICAL_PITCH_CLASSES.slice(0, startIndex)
+  ];
+}
+
+function previousPitchClass(physicalPitchClass: PhysicalPitchClass): PhysicalPitchClass {
+  return ((physicalPitchClass + PHYSICAL_PITCH_CLASSES.length - 1) %
+    PHYSICAL_PITCH_CLASSES.length) as PhysicalPitchClass;
 }

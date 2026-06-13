@@ -1,8 +1,10 @@
-import { create } from 'zustand';
+import { create, type StateCreator } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import { getEnharmonicOptionsForPitchClass, getSupportedKeys, resolveKey } from '../music/keys';
 import { assertMidiNoteNumber, createMidiPressedNote } from '../music/midi-notes';
 import { getProgressionPresets } from '../music/progressions';
 import type { MidiConnectionStatus, MidiInputDevice } from '../midi/types';
+import { DEFAULT_CAMERA_ZOOM, normalizeCameraZoom } from './view-settings';
 import type {
   KeyDefinition,
   KeySelection,
@@ -39,12 +41,15 @@ export interface AppState {
   readonly activeProgressionStepIndex: number;
   readonly selectedChordDegree: ScaleDegree | null;
   readonly chordLayerEnabled: boolean;
+  readonly chordEchoEnabled: boolean;
   readonly scaleFingeringEnabled: boolean;
   readonly scaleFingeringHand: ScaleFingeringHand;
   readonly scaleFingeringDirection: ScaleFingeringDirection;
   readonly scaleDisplayMode: ScaleDisplayMode;
   readonly labelMode: LabelMode;
   readonly labelsVisible: boolean;
+  readonly dimOutOfScale: boolean;
+  readonly cameraZoom: number;
   readonly focusMode: boolean;
   readonly theoryOverlay: TheoryOverlayState;
   readonly midi: MidiRuntimeState;
@@ -58,6 +63,8 @@ export interface AppActions {
   readonly selectChordDegree: (degree: ScaleDegree) => void;
   readonly setChordLayerEnabled: (enabled: boolean) => void;
   readonly toggleChordLayer: () => void;
+  readonly setChordEchoEnabled: (enabled: boolean) => void;
+  readonly toggleChordEcho: () => void;
   readonly setScaleFingeringEnabled: (enabled: boolean) => void;
   readonly toggleScaleFingering: () => void;
   readonly setScaleFingeringHand: (hand: ScaleFingeringHand) => void;
@@ -66,6 +73,10 @@ export interface AppActions {
   readonly setLabelMode: (labelMode: LabelMode) => void;
   readonly setLabelsVisible: (visible: boolean) => void;
   readonly toggleLabelsVisible: () => void;
+  readonly setDimOutOfScale: (enabled: boolean) => void;
+  readonly toggleDimOutOfScale: () => void;
+  readonly setCameraZoom: (cameraZoom: number) => void;
+  readonly resetCameraZoom: () => void;
   readonly setFocusMode: (enabled: boolean) => void;
   readonly toggleFocusMode: () => void;
   readonly openTheoryOverlay: (contextTarget: TheoryOverlayContextTarget) => void;
@@ -90,7 +101,28 @@ export interface AppActions {
 
 export type AppStore = AppState & AppActions;
 
+export const APP_SETTINGS_STORAGE_KEY = 'forte-app-settings';
+
 const DEFAULT_KEY_SELECTION = 'C Major' satisfies KeySelection;
+
+type PersistedAppSettings = Pick<
+  AppState,
+  | 'keySelection'
+  | 'mode'
+  | 'selectedProgressionId'
+  | 'activeProgressionStepIndex'
+  | 'selectedChordDegree'
+  | 'chordLayerEnabled'
+  | 'chordEchoEnabled'
+  | 'scaleFingeringEnabled'
+  | 'scaleFingeringHand'
+  | 'scaleFingeringDirection'
+  | 'scaleDisplayMode'
+  | 'labelMode'
+  | 'labelsVisible'
+  | 'dimOutOfScale'
+  | 'cameraZoom'
+>;
 
 const SCALE_DEGREES = [1, 2, 3, 4, 5, 6, 7] as const satisfies readonly ScaleDegree[];
 
@@ -125,12 +157,15 @@ export function createInitialAppState(): AppState {
     activeProgressionStepIndex: 0,
     selectedChordDegree: null,
     chordLayerEnabled: true,
+    chordEchoEnabled: false,
     scaleFingeringEnabled: false,
     scaleFingeringHand: 'right',
     scaleFingeringDirection: 'ascending',
     scaleDisplayMode: 'strip',
     labelMode: 'notes',
     labelsVisible: true,
+    dimOutOfScale: false,
+    cameraZoom: DEFAULT_CAMERA_ZOOM,
     focusMode: false,
     theoryOverlay: {
       isOpen: false,
@@ -140,7 +175,7 @@ export function createInitialAppState(): AppState {
   };
 }
 
-export const useAppStore = create<AppStore>()((set) => ({
+const createAppStore = (set: Parameters<StateCreator<AppStore>>[0]): AppStore => ({
   ...createInitialAppState(),
 
   selectMode: (mode) => {
@@ -237,6 +272,14 @@ export const useAppStore = create<AppStore>()((set) => ({
     set((state) => ({ chordLayerEnabled: !state.chordLayerEnabled }));
   },
 
+  setChordEchoEnabled: (enabled) => {
+    set({ chordEchoEnabled: enabled });
+  },
+
+  toggleChordEcho: () => {
+    set((state) => ({ chordEchoEnabled: !state.chordEchoEnabled }));
+  },
+
   setScaleFingeringEnabled: (enabled) => {
     set({ scaleFingeringEnabled: enabled });
   },
@@ -271,6 +314,22 @@ export const useAppStore = create<AppStore>()((set) => ({
 
   toggleLabelsVisible: () => {
     set((state) => ({ labelsVisible: !state.labelsVisible }));
+  },
+
+  setDimOutOfScale: (enabled) => {
+    set({ dimOutOfScale: enabled });
+  },
+
+  toggleDimOutOfScale: () => {
+    set((state) => ({ dimOutOfScale: !state.dimOutOfScale }));
+  },
+
+  setCameraZoom: (cameraZoom) => {
+    set({ cameraZoom: normalizeCameraZoom(cameraZoom) });
+  },
+
+  resetCameraZoom: () => {
+    set({ cameraZoom: DEFAULT_CAMERA_ZOOM });
   },
 
   setFocusMode: (enabled) => {
@@ -465,7 +524,233 @@ export const useAppStore = create<AppStore>()((set) => ({
       }
     }));
   }
-}));
+});
+
+export const useAppStore = create<AppStore>()(
+  persist(createAppStore, {
+    name: APP_SETTINGS_STORAGE_KEY,
+    storage: createJSONStorage<PersistedAppSettings>(() => localStorage),
+    version: 1,
+    partialize: selectPersistedAppSettings,
+    merge: mergePersistedAppSettings
+  })
+);
+
+function selectPersistedAppSettings(state: AppStore): PersistedAppSettings {
+  return {
+    keySelection: state.keySelection,
+    mode: state.mode,
+    selectedProgressionId: state.selectedProgressionId,
+    activeProgressionStepIndex: state.activeProgressionStepIndex,
+    selectedChordDegree: state.selectedChordDegree,
+    chordLayerEnabled: state.chordLayerEnabled,
+    chordEchoEnabled: state.chordEchoEnabled,
+    scaleFingeringEnabled: state.scaleFingeringEnabled,
+    scaleFingeringHand: state.scaleFingeringHand,
+    scaleFingeringDirection: state.scaleFingeringDirection,
+    scaleDisplayMode: state.scaleDisplayMode,
+    labelMode: state.labelMode,
+    labelsVisible: state.labelsVisible,
+    dimOutOfScale: state.dimOutOfScale,
+    cameraZoom: state.cameraZoom
+  };
+}
+
+function mergePersistedAppSettings(
+  persistedState: unknown,
+  currentState: AppStore
+): AppStore {
+  if (!isRecord(persistedState)) {
+    return currentState;
+  }
+
+  const key = resolvePersistedKey(
+    persistedState.keySelection,
+    persistedState.mode,
+    currentState
+  );
+  const progression = resolvePersistedProgressionPreset(
+    key.mode,
+    persistedState.selectedProgressionId,
+    currentState.selectedProgressionId
+  );
+  const activeProgressionStepIndex = resolvePersistedProgressionStepIndex(
+    persistedState.activeProgressionStepIndex,
+    progression
+  );
+  const selectedChordDegree = resolvePersistedScaleDegree(persistedState.selectedChordDegree);
+  const chordSelection = resolvePersistedChordSelection(
+    selectedChordDegree,
+    activeProgressionStepIndex,
+    progression
+  );
+
+  return {
+    ...currentState,
+    keySelection: key.id,
+    mode: key.mode,
+    selectedProgressionId: progression.id,
+    activeProgressionStepIndex: chordSelection.activeProgressionStepIndex,
+    selectedChordDegree: chordSelection.selectedChordDegree,
+    chordLayerEnabled: readPersistedBoolean(
+      persistedState.chordLayerEnabled,
+      currentState.chordLayerEnabled
+    ),
+    chordEchoEnabled: readPersistedBoolean(
+      persistedState.chordEchoEnabled,
+      currentState.chordEchoEnabled
+    ),
+    scaleFingeringEnabled: readPersistedBoolean(
+      persistedState.scaleFingeringEnabled,
+      currentState.scaleFingeringEnabled
+    ),
+    scaleFingeringHand: isScaleFingeringHand(persistedState.scaleFingeringHand)
+      ? persistedState.scaleFingeringHand
+      : currentState.scaleFingeringHand,
+    scaleFingeringDirection: isScaleFingeringDirection(
+      persistedState.scaleFingeringDirection
+    )
+      ? persistedState.scaleFingeringDirection
+      : currentState.scaleFingeringDirection,
+    scaleDisplayMode: isScaleDisplayMode(persistedState.scaleDisplayMode)
+      ? persistedState.scaleDisplayMode
+      : currentState.scaleDisplayMode,
+    labelMode: isLabelMode(persistedState.labelMode)
+      ? persistedState.labelMode
+      : currentState.labelMode,
+    labelsVisible: readPersistedBoolean(persistedState.labelsVisible, currentState.labelsVisible),
+    dimOutOfScale: readPersistedBoolean(persistedState.dimOutOfScale, currentState.dimOutOfScale),
+    cameraZoom:
+      typeof persistedState.cameraZoom === 'number'
+        ? normalizeCameraZoom(persistedState.cameraZoom)
+        : currentState.cameraZoom
+  };
+}
+
+function resolvePersistedKey(
+  keySelection: unknown,
+  mode: unknown,
+  fallbackState: AppState
+): KeyDefinition {
+  const resolvedKey = resolvePersistedKeySelection(keySelection);
+
+  if (resolvedKey !== null) {
+    return resolvedKey;
+  }
+
+  const fallbackKey = resolveKey(fallbackState.keySelection);
+
+  if (isSupportedMode(mode)) {
+    return resolveCompatibleKeyForMode(fallbackKey, mode);
+  }
+
+  return fallbackKey;
+}
+
+function resolvePersistedKeySelection(keySelection: unknown): KeyDefinition | null {
+  if (typeof keySelection !== 'string' && !isRecord(keySelection)) {
+    return null;
+  }
+
+  try {
+    return resolveKey(keySelection as KeySelection);
+  } catch {
+    return null;
+  }
+}
+
+function resolvePersistedProgressionPreset(
+  mode: Mode,
+  progressionId: unknown,
+  fallbackProgressionId: ProgressionId
+): ProgressionPreset {
+  const persistedProgression = resolveProgressionPreset(mode, progressionId);
+
+  if (persistedProgression !== null) {
+    return persistedProgression;
+  }
+
+  return (
+    resolveProgressionPreset(mode, fallbackProgressionId) ??
+    ensureCompatibleProgressionPreset(mode, getDefaultProgressionId(mode))
+  );
+}
+
+function resolveProgressionPreset(mode: Mode, progressionId: unknown): ProgressionPreset | null {
+  if (typeof progressionId !== 'string') {
+    return null;
+  }
+
+  try {
+    return ensureCompatibleProgressionPreset(mode, progressionId as ProgressionId);
+  } catch {
+    return null;
+  }
+}
+
+function resolvePersistedProgressionStepIndex(
+  stepIndex: unknown,
+  progression: ProgressionPreset
+): number {
+  if (!Number.isInteger(stepIndex)) {
+    return 0;
+  }
+
+  try {
+    assertProgressionStepIndex(stepIndex as number, progression);
+    return stepIndex as number;
+  } catch {
+    return 0;
+  }
+}
+
+function resolvePersistedScaleDegree(degree: unknown): ScaleDegree | null {
+  if (!Number.isInteger(degree)) {
+    return null;
+  }
+
+  try {
+    assertScaleDegree(degree as number);
+    return degree as ScaleDegree;
+  } catch {
+    return null;
+  }
+}
+
+function resolvePersistedChordSelection(
+  selectedChordDegree: ScaleDegree | null,
+  activeProgressionStepIndex: number,
+  progression: ProgressionPreset
+): Pick<PersistedAppSettings, 'activeProgressionStepIndex' | 'selectedChordDegree'> {
+  if (selectedChordDegree === null) {
+    return {
+      activeProgressionStepIndex,
+      selectedChordDegree
+    };
+  }
+
+  const matchingStep = progression.steps.find((step) => step.degree === selectedChordDegree);
+
+  if (matchingStep === undefined) {
+    return {
+      activeProgressionStepIndex,
+      selectedChordDegree
+    };
+  }
+
+  return {
+    activeProgressionStepIndex: matchingStep.stepIndex,
+    selectedChordDegree: null
+  };
+}
+
+function readPersistedBoolean(value: unknown, fallback: boolean): boolean {
+  return typeof value === 'boolean' ? value : fallback;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
 
 function createInitialMidiState(): MidiRuntimeState {
   return {
@@ -518,32 +803,54 @@ function assertScaleDegree(degree: number): asserts degree is ScaleDegree {
   }
 }
 
+function isSupportedMode(mode: unknown): mode is Mode {
+  return mode === 'major' || mode === 'naturalMinor';
+}
+
 function assertSupportedMode(mode: Mode): void {
-  if (mode !== 'major' && mode !== 'naturalMinor') {
+  if (!isSupportedMode(mode)) {
     throw new Error(`Unsupported mode "${mode}". Expected "major" or "naturalMinor".`);
   }
 }
 
+function isLabelMode(labelMode: unknown): labelMode is LabelMode {
+  return labelMode === 'notes' || labelMode === 'degrees';
+}
+
 function assertLabelMode(labelMode: LabelMode): void {
-  if (labelMode !== 'notes' && labelMode !== 'degrees') {
+  if (!isLabelMode(labelMode)) {
     throw new Error(`Unsupported label mode "${labelMode}". Expected "notes" or "degrees".`);
   }
 }
 
+function isScaleFingeringHand(hand: unknown): hand is ScaleFingeringHand {
+  return SCALE_FINGERING_HANDS.some((candidate) => candidate === hand);
+}
+
 function assertScaleFingeringHand(hand: ScaleFingeringHand): void {
-  if (!SCALE_FINGERING_HANDS.some((candidate) => candidate === hand)) {
+  if (!isScaleFingeringHand(hand)) {
     throw new Error(`Unsupported scale fingering hand "${hand}".`);
   }
 }
 
+function isScaleFingeringDirection(
+  direction: unknown
+): direction is ScaleFingeringDirection {
+  return SCALE_FINGERING_DIRECTIONS.some((candidate) => candidate === direction);
+}
+
 function assertScaleFingeringDirection(direction: ScaleFingeringDirection): void {
-  if (!SCALE_FINGERING_DIRECTIONS.some((candidate) => candidate === direction)) {
+  if (!isScaleFingeringDirection(direction)) {
     throw new Error(`Unsupported scale fingering direction "${direction}".`);
   }
 }
 
+function isScaleDisplayMode(mode: unknown): mode is ScaleDisplayMode {
+  return SCALE_DISPLAY_MODES.some((candidate) => candidate === mode);
+}
+
 function assertScaleDisplayMode(mode: ScaleDisplayMode): void {
-  if (!SCALE_DISPLAY_MODES.some((candidate) => candidate === mode)) {
+  if (!isScaleDisplayMode(mode)) {
     throw new Error(
       `Unsupported scale display mode "${mode}". Expected "strip", "staffImprovisation", or "staffPractice".`
     );

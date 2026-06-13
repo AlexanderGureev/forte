@@ -17,6 +17,9 @@ import type {
 export interface PianoStudioSceneProps {
   readonly viewModel: KeyboardViewModel;
   readonly chordRootPitchClass: PhysicalPitchClass | null;
+  readonly chordEchoEnabled: boolean;
+  readonly dimOutOfScale: boolean;
+  readonly cameraZoom: number;
   readonly motionEnabled: boolean;
   /** Фактическая ширина, занятая боковыми панелями HUD (px). */
   readonly hudSidePx?: number;
@@ -26,6 +29,9 @@ export interface PianoStudioSceneProps {
 export function PianoStudioScene({
   viewModel,
   chordRootPitchClass,
+  chordEchoEnabled,
+  dimOutOfScale,
+  cameraZoom,
   motionEnabled,
   hudSidePx,
   onSelectKey
@@ -49,6 +55,7 @@ export function PianoStudioScene({
         keyboardWidth={keyboardWidth}
         viewport={viewModel.viewport}
         hudSidePx={hudSidePx}
+        cameraZoom={cameraZoom}
         introEnabled={introPlaying}
       />
 
@@ -80,6 +87,8 @@ export function PianoStudioScene({
       <PianoKeyboard3D
         viewModel={viewModel}
         chordRootPitchClass={chordRootPitchClass}
+        chordEchoEnabled={chordEchoEnabled}
+        dimOutOfScale={dimOutOfScale}
         motionEnabled={motionEnabled}
         onSelectKey={onSelectKey}
       />
@@ -114,6 +123,7 @@ interface FixedStudioCameraProps {
   readonly keyboardWidth: number;
   readonly viewport: KeyboardViewport;
   readonly hudSidePx?: number;
+  readonly cameraZoom: number;
   readonly introEnabled: boolean;
 }
 
@@ -124,7 +134,13 @@ const CAMERA_INTRO_DISTANCE_SCALE = 1.16;
 /** Лёгкий боковой дрейф для параллакса вместо плоского зума. */
 const CAMERA_INTRO_SIDE_OFFSET = -1.6;
 
-function FixedStudioCamera({ keyboardWidth, viewport, hudSidePx, introEnabled }: FixedStudioCameraProps) {
+function FixedStudioCamera({
+  keyboardWidth,
+  viewport,
+  hudSidePx,
+  cameraZoom,
+  introEnabled
+}: FixedStudioCameraProps) {
   const get = useThree((state) => state.get);
   const size = useThree((state) => state.size);
   const placementRef = useRef<StudioCameraPlacement | null>(null);
@@ -139,7 +155,8 @@ function FixedStudioCamera({ keyboardWidth, viewport, hudSidePx, introEnabled }:
       aspect,
       viewport,
       size.width,
-      hudSidePx
+      hudSidePx,
+      cameraZoom
     );
 
     placementRef.current = placement;
@@ -150,7 +167,7 @@ function FixedStudioCamera({ keyboardWidth, viewport, hudSidePx, introEnabled }:
       camera.fov = placement.fov;
       camera.updateProjectionMatrix();
     }
-  }, [get, hudSidePx, keyboardWidth, size.height, size.width, viewport]);
+  }, [cameraZoom, get, hudSidePx, keyboardWidth, size.height, size.width, viewport]);
 
   useFrame(({ camera, clock }) => {
     const placement = placementRef.current;

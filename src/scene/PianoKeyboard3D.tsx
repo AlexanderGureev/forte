@@ -9,6 +9,8 @@ import type { KeyboardKeyViewModel, KeyboardViewModel, PhysicalPitchClass } from
 export interface PianoKeyboard3DProps {
   readonly viewModel: KeyboardViewModel;
   readonly chordRootPitchClass: PhysicalPitchClass | null;
+  readonly chordEchoEnabled: boolean;
+  readonly dimOutOfScale: boolean;
   readonly motionEnabled: boolean;
   readonly onSelectKey: (key: KeyboardKeyViewModel) => void;
 }
@@ -16,6 +18,8 @@ export interface PianoKeyboard3DProps {
 export function PianoKeyboard3D({
   viewModel,
   chordRootPitchClass,
+  chordEchoEnabled,
+  dimOutOfScale,
   motionEnabled,
   onSelectKey
 }: PianoKeyboard3DProps) {
@@ -23,7 +27,11 @@ export function PianoKeyboard3D({
   const cheekWidth = 1.15;
   const bodyWidth = keyboardWidth + cheekWidth * 2 + 0.4;
   const cheekX = keyboardWidth / 2 + cheekWidth / 2 + 0.12;
-  const chordEmphasisByKeyId = getChordEmphasisByKeyId(viewModel, chordRootPitchClass);
+  const chordEmphasisByKeyId = getChordEmphasisByKeyId(
+    viewModel,
+    chordRootPitchClass,
+    chordEchoEnabled
+  );
   const woodMap = getWoodTexture();
 
   return (
@@ -34,6 +42,7 @@ export function PianoKeyboard3D({
           keyModel={key}
           placement={getKeyPlacement(key, viewModel)}
           motionEnabled={motionEnabled}
+          dimOutOfScale={dimOutOfScale}
           chordEmphasis={chordEmphasisByKeyId.get(key.id) ?? null}
           onSelect={onSelectKey}
         />
@@ -143,7 +152,8 @@ export function PianoKeyboard3D({
  */
 function getChordEmphasisByKeyId(
   viewModel: KeyboardViewModel,
-  chordRootPitchClass: PhysicalPitchClass | null
+  chordRootPitchClass: PhysicalPitchClass | null,
+  chordEchoEnabled: boolean
 ): ReadonlyMap<string, ChordKeyEmphasis> {
   const emphasisByKeyId = new Map<string, ChordKeyEmphasis>();
   const chordKeys = viewModel.keys.filter((key) => key.highlightLayers.includes('activeChord'));
@@ -152,8 +162,10 @@ function getChordEmphasisByKeyId(
     return emphasisByKeyId;
   }
 
-  for (const key of chordKeys) {
-    emphasisByKeyId.set(key.id, 'echo');
+  if (chordEchoEnabled) {
+    for (const key of chordKeys) {
+      emphasisByKeyId.set(key.id, 'echo');
+    }
   }
 
   if (chordRootPitchClass === null) {

@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { createInitialAppState, useAppStore } from '../state/app-state';
+import { CAMERA_ZOOM_STEP, DEFAULT_CAMERA_ZOOM } from '../state/view-settings';
 import { createMidiPressedNote } from '../music/midi-notes';
 import type { MidiInputDevice } from '../midi/types';
 
@@ -12,7 +13,19 @@ const midiControllerMock = vi.hoisted(() => ({
 }));
 
 vi.mock('../scene/PianoStudioScene', () => ({
-  PianoStudioScene: () => <div data-testid="studio-scene" />
+  PianoStudioScene: ({
+    chordEchoEnabled,
+    cameraZoom
+  }: {
+    readonly chordEchoEnabled: boolean;
+    readonly cameraZoom: number;
+  }) => (
+    <div
+      data-testid="studio-scene"
+      data-camera-zoom={String(cameraZoom)}
+      data-chord-echo-enabled={String(chordEchoEnabled)}
+    />
+  )
 }));
 
 vi.mock('../midi/useMidiController', () => ({
@@ -273,6 +286,68 @@ describe('App', () => {
         .getAllByRole('button')
         .map((option) => option.textContent)
     ).toEqual(['Плашка', 'Импровизация', 'Практика']);
+    expect(
+      within(settings).getByRole('slider', { name: 'Масштаб камеры' })
+    ).toBeTruthy();
+  });
+
+  it('changes the camera zoom from the desktop View menu and resets it', () => {
+    renderDesktopApp();
+
+    expect(screen.getByTestId('studio-scene').getAttribute('data-camera-zoom')).toBe(
+      String(DEFAULT_CAMERA_ZOOM)
+    );
+
+    const viewMenu = getDesktopViewMenu();
+    const cameraZoomControl = within(viewMenu).getByRole('group', {
+      name: 'Масштаб камеры'
+    });
+    const slider = within(cameraZoomControl).getByRole('slider', {
+      name: 'Масштаб камеры'
+    }) as HTMLInputElement;
+
+    expect(slider.value).toBe(String(DEFAULT_CAMERA_ZOOM));
+
+    fireEvent.click(within(cameraZoomControl).getByRole('button', { name: 'Приблизить камеру' }));
+
+    expect(useAppStore.getState().cameraZoom).toBe(DEFAULT_CAMERA_ZOOM + CAMERA_ZOOM_STEP);
+    expect(screen.getByTestId('studio-scene').getAttribute('data-camera-zoom')).toBe(
+      String(DEFAULT_CAMERA_ZOOM + CAMERA_ZOOM_STEP)
+    );
+
+    fireEvent.change(slider, { target: { value: '0.85' } });
+
+    expect(useAppStore.getState().cameraZoom).toBe(0.85);
+
+    fireEvent.click(
+      within(cameraZoomControl).getByRole('button', { name: 'Сбросить масштаб камеры' })
+    );
+
+    expect(useAppStore.getState().cameraZoom).toBe(DEFAULT_CAMERA_ZOOM);
+    expect(screen.getByTestId('studio-scene').getAttribute('data-camera-zoom')).toBe(
+      String(DEFAULT_CAMERA_ZOOM)
+    );
+  });
+
+  it('keeps muted chord duplicates hidden by default and enables them from View', () => {
+    renderDesktopApp();
+
+    expect(screen.getByTestId('studio-scene').getAttribute('data-chord-echo-enabled')).toBe(
+      'false'
+    );
+
+    const viewMenu = getDesktopViewMenu();
+    const chordDuplicates = within(viewMenu).getByRole('button', { name: 'Дубли аккорда' });
+
+    expect(chordDuplicates.getAttribute('aria-pressed')).toBe('false');
+
+    fireEvent.click(chordDuplicates);
+
+    expect(useAppStore.getState().chordEchoEnabled).toBe(true);
+    expect(chordDuplicates.getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByTestId('studio-scene').getAttribute('data-chord-echo-enabled')).toBe(
+      'true'
+    );
   });
 
   it('removes rendered improvisation active-chord highlights when Scale only is enabled', async () => {

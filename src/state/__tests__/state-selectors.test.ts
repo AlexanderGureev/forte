@@ -13,6 +13,12 @@ import {
   selectScaleSummary,
   selectTheoryOverlayModel
 } from '../selectors';
+import {
+  CAMERA_ZOOM_MAX,
+  CAMERA_ZOOM_MIN,
+  DEFAULT_CAMERA_ZOOM
+} from '../view-settings';
+import type { MiniKeyboardKeyViewModel } from '../selectors';
 import type {
   KeyboardKeyViewModel,
   PhysicalPitchClass,
@@ -93,6 +99,14 @@ function midiPressedStaffNotes(model: ScoreStaffViewModel): readonly StaffNoteVi
   return scoreNotes(model).filter((note) => note.highlightLayers.includes('midiPressed'));
 }
 
+function activeMiniKeyboardLabels(card: {
+  readonly miniKeyboardKeys: readonly MiniKeyboardKeyViewModel[];
+}): readonly string[] {
+  return card.miniKeyboardKeys.flatMap((key) =>
+    key.active && key.noteLabel !== null ? [key.noteLabel] : []
+  );
+}
+
 describe('app state and selectors', () => {
   beforeEach(() => {
     resetStore();
@@ -106,12 +120,14 @@ describe('app state and selectors', () => {
       activeProgressionStepIndex: 0,
       selectedChordDegree: null,
       chordLayerEnabled: true,
+      chordEchoEnabled: false,
       scaleFingeringEnabled: false,
       scaleFingeringHand: 'right',
       scaleFingeringDirection: 'ascending',
       scaleDisplayMode: 'strip',
       labelMode: 'notes',
       labelsVisible: true,
+      cameraZoom: DEFAULT_CAMERA_ZOOM,
       focusMode: false,
       theoryOverlay: {
         isOpen: false,
@@ -128,12 +144,19 @@ describe('app state and selectors', () => {
       degree: 1,
       chordName: 'C'
     });
-    expect(selectActiveProgressionCards(state()).map((card) => card.active)).toEqual([
-      true,
-      false,
-      false,
-      false
+    const progressionCards = selectActiveProgressionCards(state());
+
+    expect(progressionCards.map((card) => card.active)).toEqual([true, false, false, false]);
+    expect(progressionCards.map(activeMiniKeyboardLabels)).toEqual([
+      ['C', 'E', 'G'],
+      ['G', 'B', 'D'],
+      ['A', 'C', 'E'],
+      ['F', 'A', 'C']
     ]);
+    const chordCards = selectChordList(state());
+
+    expect(activeMiniKeyboardLabels(chordCards[0])).toEqual(['C', 'E', 'G']);
+    expect(activeMiniKeyboardLabels(chordCards[6])).toEqual(['B', 'D', 'F']);
     expect(selectRecommendedKeys(state())[0]).toMatchObject({
       selected: true,
       sameMode: true
@@ -182,6 +205,29 @@ describe('app state and selectors', () => {
     }).toThrow(/Unsupported scale display mode "score"/);
   });
 
+  it('normalizes camera zoom changes', () => {
+    state().setCameraZoom(1.21);
+
+    expect(state().cameraZoom).toBe(1.21);
+
+    state().setCameraZoom(2);
+
+    expect(state().cameraZoom).toBe(CAMERA_ZOOM_MAX);
+
+    state().setCameraZoom(0);
+
+    expect(state().cameraZoom).toBe(CAMERA_ZOOM_MIN);
+
+    state().setCameraZoom(Number.NaN);
+
+    expect(state().cameraZoom).toBe(DEFAULT_CAMERA_ZOOM);
+
+    state().setCameraZoom(1.2);
+    state().resetCameraZoom();
+
+    expect(state().cameraZoom).toBe(DEFAULT_CAMERA_ZOOM);
+  });
+
   it('recalculates theory for a tonic change and preserves the active progression step', () => {
     state().selectActiveProgressionStep(2);
     state().selectKey({ tonic: 'F', mode: 'major' });
@@ -194,11 +240,14 @@ describe('app state and selectors', () => {
       selectedChordDegree: null
     });
     expect(selectScaleSummary(state()).noteNames).toEqual(['F', 'G', 'A', 'Bb', 'C', 'D', 'E']);
-    expect(selectActiveProgressionCards(state()).map((card) => card.chordName)).toEqual([
-      'F',
-      'C',
-      'Dm',
-      'Bb'
+    const progressionCards = selectActiveProgressionCards(state());
+
+    expect(progressionCards.map((card) => card.chordName)).toEqual(['F', 'C', 'Dm', 'Bb']);
+    expect(progressionCards.map(activeMiniKeyboardLabels)).toEqual([
+      ['F', 'A', 'C'],
+      ['C', 'E', 'G'],
+      ['D', 'F', 'A'],
+      ['Bb', 'D', 'F']
     ]);
     expect(selectActiveChordStatus(state())).toMatchObject({
       source: 'progression',
@@ -796,6 +845,7 @@ describe('app state and selectors', () => {
 
   it('toggles independent session UI flags and closes theory overlay without persistence', () => {
     state().toggleChordLayer();
+    state().toggleChordEcho();
     state().toggleLabelsVisible();
     state().toggleScaleFingering();
     state().setScaleFingeringHand('left');
@@ -805,6 +855,7 @@ describe('app state and selectors', () => {
 
     expect(state()).toMatchObject({
       chordLayerEnabled: false,
+      chordEchoEnabled: true,
       labelsVisible: false,
       scaleFingeringEnabled: true,
       scaleFingeringHand: 'left',
