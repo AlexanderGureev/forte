@@ -106,6 +106,7 @@ export function KeyIdentity({
 
 export interface HudActionsProps {
   readonly showViewMenu: boolean;
+  readonly showMidi?: boolean;
   readonly chordLayerEnabled: boolean;
   readonly onToggleChordLayer: () => void;
   readonly chordEchoEnabled: boolean;
@@ -137,6 +138,7 @@ export interface HudActionsProps {
 /** Кнопки действий HUD: правый край верхней полосы на десктопе. */
 export function HudActions({
   showViewMenu,
+  showMidi = true,
   chordLayerEnabled,
   onToggleChordLayer,
   chordEchoEnabled,
@@ -193,7 +195,7 @@ export function HudActions({
           onOpenTheory={onOpenTheory}
         />
       ) : null}
-      <MidiMenu {...midiPanel} />
+      {showMidi ? <MidiMenu {...midiPanel} /> : null}
       <button
         className="hud-action"
         type="button"

@@ -10,6 +10,7 @@ export interface ProgressionHudProps {
   readonly onSelectStep: (stepIndex: number) => void;
   readonly status: ActiveChordStatus;
   readonly onOpenTheory: (target: TheoryOverlayContextTarget) => void;
+  readonly showHeader?: boolean;
 }
 
 export function ProgressionHud({
@@ -19,7 +20,8 @@ export function ProgressionHud({
   cards,
   onSelectStep,
   status,
-  onOpenTheory
+  onOpenTheory,
+  showHeader = true
 }: ProgressionHudProps) {
   const statusText =
     status.source === 'progression'
@@ -28,35 +30,37 @@ export function ProgressionHud({
 
   return (
     <section className="hud-progression" aria-label="Прогрессия аккордов">
-      <div className="hud-progression__header hud-panel">
-        <span className="hud-eyebrow">Прогрессия</span>
-        <div className="hud-progression__presets" role="group" aria-label="Пресеты прогрессий">
-          {presets.map((preset) => (
+      {showHeader ? (
+        <div className="hud-progression__header hud-panel">
+          <span className="hud-eyebrow">Прогрессия</span>
+          <div className="hud-progression__presets" role="group" aria-label="Пресеты прогрессий">
+            {presets.map((preset) => (
+              <button
+                key={preset.id}
+                className="hud-preset"
+                type="button"
+                aria-pressed={preset.id === selectedProgressionId}
+                onClick={() => onSelectPreset(preset.id)}
+              >
+                {preset.name}
+              </button>
+            ))}
+          </div>
+          <span className="hud-progression__status-group">
+            <span className="hud-progression__status" data-source={status.source}>
+              {statusText}
+            </span>
             <button
-              key={preset.id}
-              className="hud-preset"
+              className="hud-info-button"
               type="button"
-              aria-pressed={preset.id === selectedProgressionId}
-              onClick={() => onSelectPreset(preset.id)}
+              aria-label="Подробнее об активном аккорде"
+              onClick={() => onOpenTheory('activeChord')}
             >
-              {preset.name}
+              i
             </button>
-          ))}
-        </div>
-        <span className="hud-progression__status-group">
-          <span className="hud-progression__status" data-source={status.source}>
-            {statusText}
           </span>
-          <button
-            className="hud-info-button"
-            type="button"
-            aria-label="Подробнее об активном аккорде"
-            onClick={() => onOpenTheory('activeChord')}
-          >
-            i
-          </button>
-        </span>
-      </div>
+        </div>
+      ) : null}
 
       <div className="hud-progression__cards">
         {cards.map((card) => (

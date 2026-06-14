@@ -271,6 +271,23 @@ describe('App', () => {
     ).toBeTruthy();
   });
 
+  it('keeps only progression cards and the bottom scale visible in focus mode', () => {
+    renderDesktopApp();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Фокус' }));
+
+    expect(screen.queryByRole('heading', { name: 'C Major' })).toBeNull();
+    expect(screen.queryByText('Прогрессия')).toBeNull();
+    expect(screen.queryByRole('group', { name: 'Пресеты прогрессий' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'MIDI' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Теория' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Фокус' }).getAttribute('aria-pressed')).toBe(
+      'true'
+    );
+    expect(screen.getByRole('button', { name: 'Выбрать шаг 1: C, ступень I' })).toBeTruthy();
+    expect(screen.getByLabelText('Ноты гаммы')).toBeTruthy();
+  });
+
   it('shows the same scale display options in the compact view settings sheet', () => {
     setViewportWidth(640);
     render(<App />);

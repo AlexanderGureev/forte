@@ -95,10 +95,12 @@
 }
 
 .primitive-progression-card {
+  position: relative;
   display: grid;
   gap: 10px;
   min-width: 160px;
   padding: 12px;
+  cursor: pointer;
 }
 
 .primitive-progression-card--active {
@@ -106,18 +108,39 @@
   background: rgba(43, 36, 29, 0.94);
 }
 
+.primitive-progression-card--disabled {
+  cursor: not-allowed;
+}
+
 .primitive-progression-card__button {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  appearance: none;
+  border: 0;
+  border-radius: inherit;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.primitive-progression-card__content {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: inherit;
+  min-width: 0;
+  pointer-events: none;
+}
+
+.primitive-progression-card__summary {
   display: grid;
   grid-template-columns: minmax(32px, auto) 1fr;
   gap: 10px;
   align-items: center;
   width: 100%;
-  border: 0;
-  padding: 0;
   color: inherit;
   text-align: left;
-  background: transparent;
-  cursor: pointer;
 }
 
 .primitive-progression-card__keyboard {
@@ -458,6 +481,7 @@
 }
 
 .primitive-chord-card:disabled,
+.primitive-progression-card--disabled,
 .primitive-progression-card__button:disabled,
 .primitive-key-selector__recommended-key:disabled,
 .primitive-key-selector__select:disabled,

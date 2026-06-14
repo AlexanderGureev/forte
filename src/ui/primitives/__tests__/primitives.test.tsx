@@ -194,10 +194,12 @@ describe('primitive components', () => {
       name: 'Выбрать шаг 1: C, ступень I'
     });
 
-    expect(button.getAttribute('aria-pressed')).toBe('true');
-    expect(screen.getByRole('img').getAttribute('aria-label')).toContain('C, E, G');
+    const keyboard = screen.getByRole('img');
 
-    fireEvent.click(button);
+    expect(button.getAttribute('aria-pressed')).toBe('true');
+    expect(keyboard.getAttribute('aria-label')).toContain('C, E, G');
+
+    fireEvent.click(keyboard);
 
     expect(handleSelectStep).toHaveBeenCalledWith(0);
   });

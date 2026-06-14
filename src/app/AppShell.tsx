@@ -69,7 +69,7 @@ export function AppShell() {
 
   const [enharmonicPitchClass, setEnharmonicPitchClass] = useState<PhysicalPitchClass | null>(null);
   const [openSheet, setSheet] = useState<MobileSheet | null>(null);
-  const sheet = store.focusMode && openSheet !== 'midi' ? null : openSheet;
+  const sheet = store.focusMode ? null : openSheet;
 
   // На узких десктопах боковые панели свернуты по умолчанию, чтобы клавиатура
   // оставалась главным элементом сцены; ручной выбор пользователя приоритетнее.
@@ -190,14 +190,16 @@ export function AppShell() {
       </div>
 
       <div className="hud" data-layout={isWide ? 'wide' : 'compact'}>
-        <div className="hud-topstrip">
-          <KeyIdentity
-            scaleSummary={scaleSummary}
-            mode={store.mode}
-            onSelectMode={store.selectMode}
-            onOpenTheory={store.openTheoryOverlay}
-            compact={!isWide}
-          />
+        <div className="hud-topstrip" data-focus={store.focusMode ? 'true' : 'false'}>
+          {!store.focusMode ? (
+            <KeyIdentity
+              scaleSummary={scaleSummary}
+              mode={store.mode}
+              onSelectMode={store.selectMode}
+              onOpenTheory={store.openTheoryOverlay}
+              compact={!isWide}
+            />
+          ) : null}
           <ProgressionHud
             presets={progressionPresets}
             selectedProgressionId={store.selectedProgressionId}
@@ -206,10 +208,12 @@ export function AppShell() {
             onSelectStep={store.selectActiveProgressionStep}
             status={activeChordStatus}
             onOpenTheory={store.openTheoryOverlay}
+            showHeader={!store.focusMode}
           />
           {isWide ? (
             <HudActions
-              showViewMenu={uiConfig.visiblePanels.theoryHints}
+              showViewMenu={!store.focusMode && uiConfig.visiblePanels.theoryHints}
+              showMidi={!store.focusMode}
               chordLayerEnabled={store.chordLayerEnabled}
               onToggleChordLayer={store.toggleChordLayer}
               chordEchoEnabled={store.chordEchoEnabled}
@@ -292,7 +296,7 @@ export function AppShell() {
 
         {!isWide ? (
           <nav className="hud-toolbar" aria-label="Панели управления">
-            {uiConfig.visiblePanels.keySelector ? (
+            {!store.focusMode && uiConfig.visiblePanels.keySelector ? (
               <button
                 className="hud-action"
                 type="button"
@@ -302,7 +306,7 @@ export function AppShell() {
                 Тональность
               </button>
             ) : null}
-            {uiConfig.visiblePanels.chordPanel ? (
+            {!store.focusMode && uiConfig.visiblePanels.chordPanel ? (
               <button
                 className="hud-action"
                 type="button"
@@ -312,17 +316,25 @@ export function AppShell() {
                 Аккорды
               </button>
             ) : null}
-            <button
-              className="hud-action"
-              type="button"
-              aria-pressed={sheet === 'midi'}
-              onClick={() => setSheet(sheet === 'midi' ? null : 'midi')}
-            >
-              MIDI
-            </button>
-            <button className="hud-action" type="button" onClick={() => store.openTheoryOverlay('key')}>
-              Теория
-            </button>
+            {!store.focusMode ? (
+              <>
+                <button
+                  className="hud-action"
+                  type="button"
+                  aria-pressed={sheet === 'midi'}
+                  onClick={() => setSheet(sheet === 'midi' ? null : 'midi')}
+                >
+                  MIDI
+                </button>
+                <button
+                  className="hud-action"
+                  type="button"
+                  onClick={() => store.openTheoryOverlay('key')}
+                >
+                  Теория
+                </button>
+              </>
+            ) : null}
             <button
               className="hud-action"
               type="button"

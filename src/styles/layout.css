@@ -40,10 +40,13 @@
 }
 
 .hud[data-layout="compact"] {
+  --hud-compact-inline-padding: 12px;
+  --hud-compact-inline-bleed: -12px;
+
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 12px;
+  padding: var(--hud-compact-inline-padding);
 }
 
 .hud-panel {
@@ -101,6 +104,20 @@
 }
 
 .hud-topstrip > .hud-actions {
+  justify-self: end;
+}
+
+.hud[data-layout="wide"] .hud-topstrip[data-focus="true"] {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+
+.hud[data-layout="wide"] .hud-topstrip[data-focus="true"] > .hud-progression {
+  grid-column: 2;
+  justify-self: center;
+}
+
+.hud[data-layout="wide"] .hud-topstrip[data-focus="true"] > .hud-actions {
+  grid-column: 3;
   justify-self: end;
 }
 
@@ -1168,6 +1185,10 @@
   justify-items: stretch;
 }
 
+.hud[data-layout="compact"] .hud-topstrip[data-focus="true"] {
+  justify-items: stretch;
+}
+
 /* Перебивает десктопный justify-self: start — плашка на всю ширину */
 .hud[data-layout="compact"] .hud-topstrip > .hud-identity {
   justify-self: stretch;
@@ -1237,6 +1258,12 @@
 
 .hud[data-layout="compact"] .hud-progression__cards {
   justify-content: flex-start;
+  width: calc(
+    100% + var(--hud-compact-inline-padding) + var(--hud-compact-inline-padding)
+  );
+  max-width: none;
+  margin-inline: var(--hud-compact-inline-bleed);
+  padding-inline: var(--hud-compact-inline-padding);
 }
 
 .hud-toolbar {
@@ -1249,8 +1276,10 @@
 
 @media (max-width: 719px) {
   .hud[data-layout="compact"] {
+    --hud-compact-inline-padding: 10px;
+    --hud-compact-inline-bleed: -10px;
+
     gap: 8px;
-    padding: 10px;
   }
 
   .hud-identity--compact {
